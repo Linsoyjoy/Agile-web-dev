@@ -1,4 +1,0 @@
-Hello Git
-Hello World!
-I'm gonna create a conflict
-Making another conflict
