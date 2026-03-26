@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stats - John Doe</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background-color: #f5f7fa;
+    }
+    .profile-header {
+      background-color: #343a40;
+      color: white;
+      padding: 30px;
+      border-radius: 10px;
+    }
+    .stat-card {
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    .graph-placeholder {
+      height: 280px;
+      background-color: #e9ecef;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #6c757d;
+      font-size: 1.1rem;
+      border: 2px dashed #adb5bd;
+      flex-direction: column;
+    }
+    .btn-custom {
+      margin-right: 10px;
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="#">Tournament</a>
+      <div class="collapse navbar-collapse">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item">
+            <a class="nav-link" href="profile.html">Profile</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link active" href="#">Stats</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container mt-5">
+    <!-- Header -->
+    <div class="profile-header">
+      <h2>John Doe</h2>
+      <p class="mb-0">Ranking: <strong>#3</strong></p>
+    </div>
+
+    <h3 class="mt-5 mb-4">Statistics</h3>
+
+    <!-- ELO Graphs -->
+    <div class="row">
+      <div class="col-lg-6 mb-4">
+        <div class="card stat-card p-4">
+          <h5>Last 30 Days ELO</h5>
+          <div class="graph-placeholder mt-3">
+            📈 Last 30 Days ELO Graph<br>
+            <small>(Line chart will go here)</small>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-6 mb-4">
+        <div class="card stat-card p-4">
+          <h5>All Time ELO</h5>
+          <div class="graph-placeholder mt-3">
+            📈 All Time ELO Graph<br>
+            <small>(Line chart will go here)</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Win / Loss Cards -->
+    <div class="row mt-4">
+      <div class="col-md-3">
+        <div class="card stat-card p-3 text-center">
+          <h5>Wins</h5>
+          <h3 class="text-success">25</h3>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card stat-card p-3 text-center">
+          <h5>Losses</h5>
+          <h3 class="text-danger">10</h3>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card stat-card p-3 text-center">
+          <h5>Draws</h5>
+          <h3>5</h3>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card stat-card p-3 text-center">
+          <h5>Win Rate</h5>
+          <h3>62%</h3>
+        </div>
+      </div>
+    </div>
+
+    <!-- Advanced Metrics -->
+    <div class="card stat-card mt-5 p-4">
+      <h5 class="mb-4">Advanced Metrics</h5>
+      <div class="d-flex flex-wrap gap-3">
+        <button class="btn btn-outline-primary btn-custom" disabled>Accuracy</button>
+        <button class="btn btn-outline-primary btn-custom" disabled>Blunders per Game</button>
+        <button class="btn btn-outline-primary btn-custom" disabled>Average Move Time</button>
+        <button class="btn btn-outline-primary btn-custom" disabled>Opening Performance</button>
+        <button class="btn btn-outline-primary btn-custom" disabled>Endgame Strength</button>
+        <button class="btn btn-outline-primary btn-custom" disabled>Tactical Vision</button>
+      </div>
+      <small class="text-muted mt-3 d-block">These buttons are not clickable yet</small>
+    </div>
+
+    <!-- Bottom Buttons -->
+    <div class="mt-5 mb-5">
+      <button class="btn btn-warning btn-custom">View Full Detailed Stats</button>
+      <button class="btn btn-secondary btn-custom">Export Stats</button>
+      <button class="btn btn-danger btn-custom">Report Issue</button>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
