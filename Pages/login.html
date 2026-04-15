@@ -12,37 +12,43 @@
         background-color: #343a40;
     }
 
-    .hero {
+    .sign-up-box {
         background-color: #f5f7fa;
         color: black;
         padding: 25px;
         border-radius: 25px;
         text-align: center;
-        font-size: 24px;
-        float: left;
+        font-size: 20px;
+        margin-left: 30px;
+        margin-right: 30px;
+        margin-bottom: 5px;
     }
 
     .heading{
         font-size: 64px;
     }
 
-    .btn-custom {
-        margin: 5px;
-        background-color: #343a40;
-        color: #f5f7fa;
-    }
-
     .sign-up{
         color: #f5f7fa;
         text-align: center;
-        display: inline-block;
+        font-size: 17px;
+        
+    }
+
+    btn-secondary{
+        margin: 5px;
+        color: #343a40;
     }
     
     img{
-        width: 720px;
-        height: 1029px;
+        max-width: 73%;
         float: right;
         margin-left: auto;
+        display: grid;
+    }
+
+    .main-display {
+        display: flex;
     }
 
     </style>
@@ -50,20 +56,23 @@
 
 <!--Login Box-->
 <body>
-    <div class="container mt-5">
-        <div class="hero">
-            <h1 class="heading"><b>Welcome Back!</b></h1>
-            <p>Enter your details to access your Chess Tracker account!</p>
-            <form>
-                <input type="text" class="form-control form-control-lg" id="username" name="Username" placeholder="Username"><br>
-                <input type="password" class="form-control form-control-lg" id="password" name="Password" placeholder="Password">
-                <button type="button" class="btn btn-link" style="color: black;">Forgot password</button><br>
-                <button type="submit" class="btn btn-custom btn-lg">Log in</button>
-            </form>
+    <div class = "main-display">
+        <div class="container mt-5" style="align-content: center;">
+            <div class="sign-up-box">
+                <h1 class="heading"><b>Welcome Back!</b></h1>
+                <p>Enter your details to access your Chess Tracker account!</p>
+                <form>
+                    <input type="text" class="form-control form-control-lg" id="username" name="Username" placeholder="Username" style="margin-bottom: 10px;">
+                    <input type="password" class="form-control form-control-lg" id="password" name="Password" placeholder="Password"style="margin-top 10px;">
+                    <button type="button" class="btn btn-link" style="color: black;" onclick="alert('Reset your password!')">Forgot password</button><br>
+                    <button type="submit" class="btn btn-secondary btn-lg" onclick="alert('Welcome back!')">Log in</button>
+                </form>
+            </div>
+            <p class="sign-up">Don't have an account? <a onclick="alert('Sign up here!')"><b>Sign up</b></p></a>
+        </div>
+        <!--Side image-->
+        <div>
+            <img src="Images\Login.jpg" alt="Login page splash image">
         </div>
     </div>
-</body>
-
-<body>
-    <img src="Images\Login.jpg" alt="Login page splash image">
 </body>
