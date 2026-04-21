@@ -1,7 +1,16 @@
+import os
 from flask import Flask, render_template, request, redirect, url_for, flash
+from flask_sqlalchemy import SQLAlchemy
+from werkzeug.security import generate_password_hash
 
 app = Flask(__name__)
-app.secret_key = '' #Will fix this code later - Whytothewhat
+app.config['SECRET_KEY'] = os.urandom(24)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
+db = SQLAlchemy(app)
+class User(db.Model):
+    username = db.Column(db.String(100), unique=True, nullable=False, primary_key=True)
+    email = db.Column(db.String(100), unique=True, nullable=False)
+    password_hash = db.Column(db.String(256), nullable=False)
 
 
 @app.route('/')
@@ -40,7 +49,18 @@ def signup():
             flash('Password must be at least 6 characters long!', 'error')
             return render_template('signup.html')
         
-        #Store Users Here - Whytothewhat
+        if User.query.filter_by(username=username).first():
+            flash('Username already taken, please choose another!', 'error')
+            return render_template('signup.html')
+        
+        if User.query.filter_by(email=email).first():
+            flash('Email already registered!', 'error')
+            return render_template('signup.html')
+        
+        password_hash = generate_password_hash(password)
+        new_user = User(username=username, email=email, password_hash=password_hash)
+        db.session.add(new_user)
+        db.session.commit()
         flash('Account created successfully! Please log in.', 'success')
         return redirect(url_for('login'))
     
