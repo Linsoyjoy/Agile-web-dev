@@ -1,7 +1,7 @@
 import os
 from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
-from werkzeug.security import generate_password_hash
+from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__, static_folder='static', static_url_path='/static')
 app.config['SECRET_KEY'] = os.urandom(24)
@@ -34,9 +34,14 @@ def login():
     if request.method == 'POST':
         username = request.form['Username']
         password = request.form['Password']
-        
+        if not username or not password:
+            flash('Please enter both username and password!', 'error')
+            return render_template('login.html')
+    
         user = User.query.filter_by(username=username).first()
-        if user and password:  # Simplified for now - add proper password checking later
+
+
+        if user and check_password_hash(user.password_hash, password):
             flash('Login successful!', 'success')
             return redirect(url_for('home'))
         else:
