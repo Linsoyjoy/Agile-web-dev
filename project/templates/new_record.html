@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Add New Game Record</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background-color: #f5f7fa;
+    }
+    .record-card {
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    .form-label {
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="/">Tournament</a>
+      <div class="collapse navbar-collapse">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item"><a class="nav-link" href="/viewstats">View Stats</a></li>
+          <li class="nav-item"><a class="nav-link" href="/profile">Profile</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container mt-5">
+    <div class="card record-card p-4">
+      <h2 class="mb-4">Add New Game Record</h2>
+      <form method="post">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label" for="opponent">Opponent</label>
+            <input class="form-control" id="opponent" name="opponent" required>
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label" for="result">Result</label>
+            <select class="form-select" id="result" name="result" required>
+              <option value="Win">Win</option>
+              <option value="Loss">Loss</option>
+              <option value="Draw">Draw</option>
+            </select>
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label" for="colour">Colour</label>
+            <select class="form-select" id="colour" name="colour" required>
+              <option value="White">White</option>
+              <option value="Black">Black</option>
+            </select>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label" for="opening">Opening</label>
+            <input class="form-control" id="opening" name="opening" placeholder="e.g. Sicilian Defense">
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label" for="moves">Moves</label>
+            <input class="form-control" id="moves" name="moves" type="number" min="1">
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label" for="date_played">Date played</label>
+            <input class="form-control" id="date_played" name="date_played" type="date" required>
+          </div>
+
+          <div class="col-12">
+            <label class="form-label" for="notes">Notes</label>
+            <textarea class="form-control" id="notes" name="notes" rows="4" placeholder="Add any notes about the game..."></textarea>
+          </div>
+
+          <div class="col-12 text-end">
+            <button class="btn btn-primary" type="submit">Save Record</button>
+            <a class="btn btn-secondary" href="/viewstats">Cancel</a>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
