@@ -77,6 +77,18 @@ def new_record():
 
     return render_template('new_record.html')
 
+@app.route('/faq', methods=['GET', 'POST'])
+def faq():
+    if request.method == 'POST':
+        name = request.form['name']
+        email = request.form['email']
+        query = request.form['query']
+        # TODO: Store query in database or send email
+        flash('Your query has been submitted successfully! We will get back to you soon.', 'success')
+        return redirect(url_for('faq'))
+
+    return render_template('faq.html')
+
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
     if request.method == 'POST':
