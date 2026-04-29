@@ -1,0 +1,62 @@
+body {
+    background-color: #f5f7fa;
+}
+
+.header {
+    background-color: #343a40;
+    color: white;
+    padding: 30px;
+    border-radius: 10px;
+}
+
+.card-ui {
+    border-radius: 10px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.section-title {
+    margin-top: 40px;
+    margin-bottom: 15px;
+}
+
+.profile-header {
+      background-color: #343a40;
+      color: white;
+      padding: 30px;
+      border-radius: 10px;
+}
+
+.stat-card {
+    border-radius: 10px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.graph-placeholder {
+    height: 280px;
+    background-color: #e9ecef;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #6c757d;
+    font-size: 1.1rem;
+    border: 2px dashed #adb5bd;
+    flex-direction: column;
+}
+
+.btn-custom {
+    margin-right: 10px;
+}
+
+.hero {
+    background-color: #343a40;
+    color: white;
+    padding: 50px;
+    border-radius: 10px;
+    text-align: center;
+}
+
+.feature-card {
+    border-radius: 10px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
