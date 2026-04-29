@@ -52,7 +52,7 @@ def viewstats():
 @app.route('/calendar')
 def calendar():
     try:
-        # Get all matches with tournament info
+        # Get all matches with tournament info (show all for now, will filter by user later)
         matches = db.session.query(Match, Tournament).join(Tournament).order_by(Match.scheduled_date).all()
         
         # Format events for FullCalendar
@@ -130,6 +130,27 @@ def signup():
         return redirect(url_for('login'))
     
     return render_template('signup.html')
+
+def add_sample_data():
+    """Add sample users and data for testing"""
+    with app.app_context():
+        # Check if data already exists
+        if User.query.filter_by(username='alice').first():
+            print("Sample data already exists")
+            return
+        
+        # Create sample users
+        users = [
+            User(username='alice', email='alice@example.com', password_hash=generate_password_hash('password123')),
+            User(username='bob', email='bob@example.com', password_hash=generate_password_hash('password123')),
+            User(username='charlie', email='charlie@example.com', password_hash=generate_password_hash('password123')),
+        ]
+        
+        for user in users:
+            db.session.add(user)
+        
+        db.session.commit()
+        print("Sample users created: alice, bob, charlie (password: password123)")
 
 # Create database tables
 with app.app_context():
