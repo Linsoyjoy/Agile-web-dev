@@ -35,10 +35,10 @@
                     <button type="submit" class="btn btn-secondary btn-lg">Sign Up</button>
                 </form>
             </div>
-            <p class="sign-up">Already have an account? <a href="/login"><b>Log in</b></p></a>
+            <p class="sign-up">Already have an account? <a href="/login"><b>Log in</b></a></p>
         </div>
         <div class="login-img">
-            <img src="/project/static/images/Login.jpg" alt="Sign up page splash image">
+            <img src="{{ url_for('static', filename='images/Login.jpg') }}" alt="Sign up page splash image">
         </div>
     </div>
 </body>
