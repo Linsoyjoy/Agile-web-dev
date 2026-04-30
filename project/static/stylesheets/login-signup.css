@@ -32,14 +32,35 @@ body{
 }
 
 .login-img{
-    width: calc(100% - 480px);
-    justify-content: center;
+    width: calc(100% - 350px);
     overflow: hidden;
     position: relative;
+    display: grid;
 }
 
 .login-img img{
     width: 100%;
-    height: 100%;
+    height: 100vh;
     object-fit: cover;
+}
+
+a {
+    color: #f5f7fa;
+    text-decoration-line: none;
+}
+
+a:hover{
+    text-decoration-line: underline;
+}
+
+.btn-link{
+    text-decoration-line: none;
+}
+
+.btn-link:hover{
+    text-decoration-line: underline;
+}
+
+.btn-secondary{
+    background-color: #343a40;
 }

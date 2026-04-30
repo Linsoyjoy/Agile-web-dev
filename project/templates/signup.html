@@ -11,6 +11,9 @@
 
 <body>
     <div class = "alt-display">
+        <div class="login-img">
+            <img src="{{ url_for('static', filename='images/signup.jpg') }}" alt="Sign up page splash image">
+        </div>
         <div class="container" style="align-content: center;">
             <div class="sign-up-box">
                 <h1 class="heading"><b>Join Chessmate!</b></h1>
@@ -32,13 +35,10 @@
                     <input type="email" class="form-control form-control-lg" id="email" name="email" placeholder="Email" style="margin-bottom: 10px;" required>
                     <input type="password" class="form-control form-control-lg" id="password" name="password" placeholder="Password" style="margin-bottom: 10px;" required>
                     <input type="password" class="form-control form-control-lg" id="confirm_password" name="confirm_password" placeholder="Confirm Password" style="margin-bottom: 10px;" required>
-                    <button type="submit" class="btn btn-secondary btn-lg">Sign Up</button>
+                    <button type="submit" class="btn btn-secondary btn-lg btn-block">Sign Up</button>
                 </form>
             </div>
             <p class="sign-up">Already have an account? <a href="/login"><b>Log in</b></p></a>
-        </div>
-        <div class="login-img">
-            <img src="{{ url_for('static', filename='images/Login.jpg') }}" alt="Sign up page splash image">
         </div>
     </div>
 </body>
