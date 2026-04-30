@@ -1,6 +1,8 @@
-### Project Description
+# CHESSMATE
 
-Chess tournament tracking website. Users are able to: 
+Chess tournament tracking website. 
+
+### Features
 
 * Add records of their tournaments
 * View player's statistics
@@ -8,7 +10,7 @@ Chess tournament tracking website. Users are able to:
 * Use the calendar to view upcoming tournaments
 * Submit queries for any issues within the website
 
-### Group Members
+## Group Members
 
 |Name|Student ID|GitHub Username|
 |-|-|-|
