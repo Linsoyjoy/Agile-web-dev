@@ -1,5 +1,5 @@
 import os
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
@@ -35,22 +35,36 @@ class Match(db.Model):
 
 @app.route('/')
 def home():
-    return render_template('home.html')
+    if 'username' not in session:
+        return render_template('landing.html')
+    return render_template('home.html', username=session['username'])
 
 @app.route('/friends')
 def friends():
-    return render_template('friends.html')
+    if 'username' not in session:
+        flash('Please log in to access this page!', 'error')
+        return redirect(url_for('login'))
+    return render_template('friends.html', username=session['username'])
 
 @app.route('/profile')
 def profile():
-    return render_template('profile.html')
+    if 'username' not in session:
+        flash('Please log in to access this page!', 'error')
+        return redirect(url_for('login'))
+    return render_template('profile.html', username=session['username'])
 
 @app.route('/viewstats')
 def viewstats():
-    return render_template('viewstats.html')
+    if 'username' not in session:
+        flash('Please log in to access this page!', 'error')
+        return redirect(url_for('login'))
+    return render_template('viewstats.html', username=session['username'])
 
 @app.route('/calendar')
 def calendar():
+    if 'username' not in session:
+        flash('Please log in to access this page!', 'error')
+        return redirect(url_for('login'))
     try:
         # Get all matches with tournament info (show all for now, will filter by user later)
         matches = db.session.query(Match, Tournament).join(Tournament).order_by(Match.scheduled_date).all()
@@ -73,10 +87,10 @@ def calendar():
                 'borderColor': event_color
             })
         
-        return render_template('calendar.html', matches=matches, events=events)
+        return render_template('calendar.html', matches=matches, events=events, username=session['username'])
     except Exception as e:
         # Handle case where tables don't exist or no data
-        return render_template('calendar.html', matches=[], events=[])
+        return render_template('calendar.html', matches=[], events=[], username=session['username'])
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -89,14 +103,20 @@ def login():
     
         user = User.query.filter_by(username=username).first()
 
-
         if user and check_password_hash(user.password_hash, password):
+            session['username'] = username
             flash('Login successful!', 'success')
             return redirect(url_for('home'))
         else:
             flash('Invalid username or password!', 'error')
     
     return render_template('login.html')
+
+@app.route('/logout')
+def logout():
+    session.pop('username', None)
+    flash('You have been logged out!', 'success')
+    return redirect(url_for('home'))
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
