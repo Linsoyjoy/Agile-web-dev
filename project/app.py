@@ -13,6 +13,16 @@ class User(db.Model):
     email = db.Column(db.String(100), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
 
+class GameRecord(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    opponent = db.Column(db.String(100), nullable=False)
+    result = db.Column(db.String(10), nullable=False)
+    colour = db.Column(db.String(10), nullable=False)
+    opening = db.Column(db.String(100))
+    moves = db.Column(db.Integer)
+    date_played = db.Column(db.String(20), nullable=False)
+    notes = db.Column(db.Text)
+
 class Tournament(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(200), nullable=False)
@@ -111,6 +121,52 @@ def login():
             flash('Invalid username or password!', 'error')
     
     return render_template('login.html')
+
+@app.route('/new_record', methods=['GET', 'POST'])
+def new_record():
+    if request.method == 'POST':
+        opponent = request.form['opponent']
+        result = request.form['result']
+        colour = request.form['colour']
+        opening = request.form.get('opening', '')
+        moves = request.form.get('moves', None)
+        date_played = request.form['date_played']
+        notes = request.form.get('notes', '')
+
+        if moves:
+            try:
+                moves = int(moves)
+            except ValueError:
+                flash('Number of moves must be a valid number!', 'error')
+                return render_template('new_record.html')
+
+        record = GameRecord(
+            opponent=opponent,
+            result=result,
+            colour=colour,
+            opening=opening,
+            moves=moves,
+            date_played=date_played,
+            notes=notes
+        )
+        db.session.add(record)
+        db.session.commit()
+        flash('Game recorded successfully!', 'success')
+        return redirect(url_for('viewstats'))
+
+    return render_template('new_record.html')
+
+@app.route('/faq', methods=['GET', 'POST'])
+def faq():
+    if request.method == 'POST':
+        name = request.form['name']
+        email = request.form['email']
+        query = request.form['query']
+        # TODO: Store query in database or send email
+        flash('Your query has been submitted successfully! We will get back to you soon.', 'success')
+        return redirect(url_for('faq'))
+
+    return render_template('faq.html')
 
 @app.route('/logout')
 def logout():

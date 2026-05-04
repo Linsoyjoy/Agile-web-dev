@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FAQ and Queries</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+
+<body>
+    <!-- Navbar (matches home.html) -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{{ url_for('home') }}">Chessmate</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('home') }}">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('profile') }}">Profile</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('friends') }}">Friends</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('viewstats') }}">Stats</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{{ url_for('faq') }}">FAQ</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-5">
+
+        <!-- Page Header -->
+        <h1 style="color:blue;">FAQ and Queries</h1>
+        <p>Here you can find answers to frequently asked questions and submit your queries.</p>
+
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- FAQ Section -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <h3 class="mb-3">Frequently Asked Questions</h3>
+
+                <!-- FAQ Card 1 -->
+                <div class="card feature-card p-3 mb-3">
+                    <h5>How do I track a chess game?</h5>
+                    <p>After logging in, navigate to your Profile page and use the "Log Game" button to record the result, opponent, and date of your match. All logged games will appear in your game history.</p>
+                </div>
+
+                <!-- FAQ Card 2 -->
+                <div class="card feature-card p-3 mb-3">
+                    <h5>How is my rating calculated?</h5>
+                    <p>Chess Tracker uses the Elo rating system. Your rating updates automatically after each logged game based on the result and the rating difference between you and your opponent.</p>
+                </div>
+
+                <!-- FAQ Card 3 -->
+                <div class="card feature-card p-3 mb-3">
+                    <h5>How do I add friends?</h5>
+                    <p>Go to the Friends page and search for a player by their username, or find similarly skilled players with an ELO range. Once found, click "Add Friend" to send them a friend request. You can view their stats once they accept.</p>
+                </div>
+
+            
+
+                <!-- FAQ Card 4 -->
+                <div class="card feature-card p-3 mb-3">
+                    <h5>I forgot my password. What do I do?</h5>
+                    <p>On the Login page, click the "Forgot password" link and follow the instructions to reset your password via your registered email address.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Query Submission Section -->
+        <div class="row mt-5">
+            <div class="col-md-8">
+                <h3 class="mb-3">Submit a Query</h3>
+                <p>Can't find what you're looking for? Send us your question and we'll get back to you.</p>
+
+                <div class="card feature-card p-4">
+                    <form method="POST" action="{{ url_for('faq') }}">
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Your Name</label>
+                            <input type="text" class="form-control form-control-lg" id="name" name="name" placeholder="Enter your name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email Address</label>
+                            <input type="email" class="form-control form-control-lg" id="email" name="email" placeholder="Enter your email" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="query" class="form-label">Your Query</label>
+                            <textarea class="form-control" id="query" name="query" rows="4" placeholder="Describe your question or issue..." required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-secondary btn-lg">Submit Query</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+</html>
+
+
