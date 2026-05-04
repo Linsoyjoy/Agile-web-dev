@@ -13,26 +13,26 @@
     <!-- Navbar (matches home.html) -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container-fluid">
-            <a class="navbar-brand" href="#">Chess Tracker</a>
+            <a class="navbar-brand" href="{{ url_for('home') }}">Chessmate</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="/">Home</a>
+                        <a class="nav-link" href="{{ url_for('home') }}">Home</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/profile">Profile</a>
+                        <a class="nav-link" href="{{ url_for('profile') }}">Profile</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/friends">Friends</a>
+                        <a class="nav-link" href="{{ url_for('friends') }}">Friends</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/viewstats">Stats</a>
+                        <a class="nav-link" href="{{ url_for('viewstats') }}">Stats</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link active" href="/faq">FAQ</a>
+                        <a class="nav-link active" href="{{ url_for('faq') }}">FAQ</a>
                     </li>
                 </ul>
             </div>
@@ -97,7 +97,7 @@
                 <p>Can't find what you're looking for? Send us your question and we'll get back to you.</p>
 
                 <div class="card feature-card p-4">
-                    <form method="POST" action="/faq">
+                    <form method="POST" action="{{ url_for('faq') }}">
                         <div class="mb-3">
                             <label for="name" class="form-label">Your Name</label>
                             <input type="text" class="form-control form-control-lg" id="name" name="name" placeholder="Enter your name" required>
