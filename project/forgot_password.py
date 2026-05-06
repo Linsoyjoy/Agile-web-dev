@@ -8,8 +8,6 @@ def reset_password_email(username, email, code):
     receiver_email = str(email)
     app_password = "pcqb gcuv avgh zjsj"
     readablecode = ""
-    for i in code:
-        readablecode += str((int(i)%10))
 
     # Create the email
     msg = MIMEMultipart()
@@ -27,7 +25,7 @@ def reset_password_email(username, email, code):
         </p>
         
         <div style="font-size: 28px; font-weight: bold; letter-spacing: 4px; margin: 20px 0; color: #000;">
-            {readablecode}
+            {code}
         </div>
         
         <p style="font-size: 14px; color: #888;">
