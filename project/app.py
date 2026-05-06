@@ -269,19 +269,19 @@ def forgotpassword():
                     return render_template('forgotpassword.html', resetstep = 3)
                 else:
                     # Update user's password
-                    user = User.query.filter_by(email=session['resetemail']).first()
+                    user = session.get('resetuser')
                     if user:
                         user.password_hash = generate_password_hash(password)
                         db.session.commit()
                         flash('Your password has been reset successfully! Please log in with your new password.', 'success')
-                        session.clear()
+                        session.pop('resetcode', None)
+                        session['resetstep'] = 1
                         return redirect(url_for('login'))
                     else:
                         flash('An error occurred while resetting your password. Please try again.', 'error')
                         session['resetstep'] = 1
                         return render_template('forgotpassword.html', resetstep = 1)
-                    
-    return render_template('forgotpassword.html', resetstep = session.get('resetstep', 1))
+    return render_template('forgotpassword.html', resetstep = 1)
 
 
 @app.route('/new_record', methods=['GET', 'POST'])
