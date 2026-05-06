@@ -3,6 +3,7 @@ from flask import Flask, render_template, request, redirect, url_for, flash, jso
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from werkzeug.security import generate_password_hash, check_password_hash
+from forgot_password import reset_password_email
 from datetime import datetime
 
 app = Flask(__name__, static_folder='static', static_url_path='/static')
@@ -216,6 +217,30 @@ def login():
             flash('Invalid username or password!', 'error')
     
     return render_template('login.html')
+
+@app.route('/forgotpassword', methods=['GET', 'POST'])
+def forgotpassword():
+    if 'reset-step' not in session:
+        session['resetstep'] = 1
+
+    if request.method == 'POST':
+        if session['resetstep'] == 1:
+            length = len(request.form)
+            if request.form['Email'] and length == 1:
+                email = request.form['Email']
+                if User.query.filter_by(email=email):
+                    user = User.query.filter_by(email=email).first()
+                    code = os.urandom(6)
+                    reset_password_email(user.username, email, code)
+                    print("Sent email!")
+                else:
+                    print("No Email")
+                flash('If your account is valid, a verification code has been sent to your email', 'success')
+                session['resetstep'] = 2
+                return render_template('forgotpassword.html', resetstep = 2)
+
+    return render_template('forgotpassword.html')
+
 
 @app.route('/new_record', methods=['GET', 'POST'])
 def new_record():
