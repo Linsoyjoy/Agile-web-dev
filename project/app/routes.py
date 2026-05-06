@@ -172,7 +172,7 @@ def login():
             flash('Login successful!', 'success')
             return redirect(url_for('home'))
         else:
-            flash('Invalid username or password!', 'error')
+            flash('Incorrect username or password!', 'error')
     
     return render_template('login.html')
 
@@ -260,3 +260,11 @@ def signup():
         return redirect(url_for('login'))
     
     return render_template('signup.html')
+
+@app.route('/forgotpassword',methods=['GET', 'POST'])
+def forgotpassword():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        confirm_password = request.form['confirm_password']
+    return render_template('forgotpassword.html')
