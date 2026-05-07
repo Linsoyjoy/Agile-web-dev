@@ -65,6 +65,7 @@ a:hover{
     background-color: #343a40;
 }
 
-.logo{
-    width: 60%;
+.forgot-pass{
+    color: black;
+    margin-bottom: 10px;
 }

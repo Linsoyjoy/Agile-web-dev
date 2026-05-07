@@ -16,10 +16,23 @@
             <div class="sign-up-box">
                 <h1 class="heading"><b>Welcome Back!</b></h1>
                 <p>Enter your details to access your Chessmate account!</p>
+                
+                
+                <!-- Flash messages -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }}" role="alert">
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
                 <form method="POST" action="/login">
                     <input type="text" class="form-control form-control-lg" id="username" name="Username" placeholder="Username" style="margin-bottom: 10px;">
                     <input type="password" class="form-control form-control-lg" id="password" name="Password" placeholder="Password"style="margin-top 10px;">
-                    <button type="button" class="btn btn-link" style="color: black;">Forgot password</button><br>
+                    <p><a class="forgot-pass" href="/forgotpassword">Forgot password</a></p><br>
                     <button type="submit" class="btn btn-secondary btn-lg btn-block">Log in</button>
                 </form>
             </div>
