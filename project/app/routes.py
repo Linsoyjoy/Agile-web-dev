@@ -222,6 +222,40 @@ def faq():
 
     return render_template('faq.html')
 
+@app.route('/leaderboard')
+def leaderboard():
+    if 'username' not in session:
+        flash('Please log in to access this page!', 'error')
+        return redirect(url_for('login'))
+
+    all_users = User.query.all()
+    players = []
+    for u in all_users:
+        matches = Match.query.filter(
+            (Match.player1 == u.username) | (Match.player2 == u.username)
+        ).all()
+        wins = losses = draws = 0
+        for m in matches:
+            if m.player1 == u.username:
+                if m.result == 'win': wins += 1
+                elif m.result == 'loss': losses += 1
+                else: draws += 1
+            else:
+                if m.result == 'loss': wins += 1
+                elif m.result == 'win': losses += 1
+                else: draws += 1
+        total = wins + losses + draws
+        players.append({
+            'username': u.username,
+            'wins': wins,
+            'losses': losses,
+            'draws': draws,
+            'win_rate': round((wins / total * 100) if total > 0 else 0, 1)
+        })
+
+    players.sort(key=lambda x: (x['wins'], x['win_rate']), reverse=True)
+    return render_template('leaderboard.html', players=players, username=session['username'])
+
 @app.route('/logout')
 def logout():
     session.pop('username', None)
