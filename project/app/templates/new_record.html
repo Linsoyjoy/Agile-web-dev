@@ -53,6 +53,7 @@
               <option value="Win">Win</option>
               <option value="Loss">Loss</option>
               <option value="Draw">Draw</option>
+              <option value="Pending">Pending</option>
             </select>
           </div>
 
@@ -70,8 +71,16 @@
           </div>
 
           <div class="col-md-3">
-            <label class="form-label" for="moves">Moves</label>
-            <input class="form-control" id="moves" name="moves" type="number" min="1">
+            <label class="form-label" for="termination">Termination</label>
+            <select class="form-select" id="termination" name="termination" required>
+              <option value="Checkmate">Checkmate</option>
+              <option value="Resignation">Resignation</option>
+              <option value="Timeout">Timeout</option>
+              <option value="Repetition">Repetition</option>
+              <option value="Insufficient Material">Insufficient material</option>
+              <option value="Stalemate">Stalemate</option>
+              <option value="Draw by agreement">Draw by agreement</option>
+            </select>
           </div>
 
           <div class="col-md-3">
@@ -80,8 +89,8 @@
           </div>
 
           <div class="col-12">
-            <label class="form-label" for="notes">Notes</label> 
-            <textarea class="form-control" id="notes" name="notes" rows="4" placeholder="Add any notes about the game..."></textarea>
+            <label class="form-label" for="game_record">Game Record</label> 
+            <textarea class="form-control" id="game_record" name="game_record" rows="4" placeholder="e.g. 1.e4 e5 2.Nf3 Nc6 ..."></textarea>
           </div>
 
           <div class="col-12 text-end">

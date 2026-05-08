@@ -3,8 +3,9 @@ from flask import Flask, render_template, request, redirect, url_for, flash, jso
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from app import app, db
-from app.models import User, Tournament, Match, GameRecord
+from app.models import User, Tournament, Match
 from app.forgot_password import reset_password_email
+from datetime import date
 import datetime
 
 @app.route('/')
@@ -35,7 +36,7 @@ def profile():
     
     # Calculate real statistics from match data
     user_matches = Match.query.filter(
-        (Match.player1 == username) | (Match.player2 == username)
+        (Match.player == username)
     ).all()
     
     wins = 0
@@ -45,30 +46,19 @@ def profile():
     
     for match in user_matches:
         # Determine if user is player1 or player2 and get result
-        if match.player1 == username:
-            if match.result == 'win':
-                wins += 1
-                opponent = match.player2
-            elif match.result == 'loss':
-                losses += 1
-                opponent = match.player2
-            else:  # draw
-                draws += 1
-                opponent = match.player2
-        else:  # user is player2
-            if match.result == 'win':
-                losses += 1  # player1 won, so player2 lost
-                opponent = match.player1
-            elif match.result == 'loss':
-                wins += 1  # player1 lost, so player2 won
-                opponent = match.player1
-            else:  # draw
-                draws += 1
-                opponent = match.player1
+        if match.result == 'Win':
+            wins += 1
+            opponent = match.opponent
+        elif match.result == 'Loss':
+            losses += 1
+            opponent = match.opponent
+        else:  # draw
+            draws += 1
+            opponent = match.opponent
         
         # Add to recent matches (convert result to user's perspective)
-        user_result = 'Win' if match.player2 == username and match.result == 'loss' else \
-                     'Loss' if match.player2 == username and match.result == 'win' else \
+        user_result = 'Win' if match.opponent == username and match.result == 'Loss' else \
+                     'Loss' if match.opponent == username and match.result == 'Win' else \
                      match.result.capitalize()
         
         recent_matches.append({
@@ -78,7 +68,7 @@ def profile():
     
     # Sort recent matches by date (most recent first) and take last 3
     recent_matches = sorted(recent_matches, 
-                          key=lambda x: next((m.scheduled_date for m in user_matches), datetime.min), 
+                          key=lambda x: next((m.date_played for m in user_matches), datetime.datetime.min), 
                           reverse=True)[:3]
     
     total_games = wins + losses + draws
@@ -89,11 +79,11 @@ def profile():
     user_rankings = []
     for u in all_users:
         u_matches = Match.query.filter(
-            (Match.player1 == u.username) | (Match.player2 == u.username)
+            (Match.player == u.username) | (Match.opponent == u.username)
         ).all()
         u_wins = 0
         for m in u_matches:
-            if m.player1 == u.username:
+            if m.player == u.username:
                 if m.result == 'win':
                     u_wins += 1
             else:
@@ -109,8 +99,8 @@ def profile():
         'losses': losses,
         'draws': draws,
         'win_rate': win_rate,
-        'white_win_rate': win_rate,  # Simplified - would need to track piece colors
-        'black_win_rate': win_rate,  # Simplified - would need to track piece colors
+        'white_win_rate': win_rate,  # Simplified - would need to track piece colours
+        'black_win_rate': win_rate,  # Simplified - would need to track piece colours
         'ranking': f'#{user_rank}',
         'recent_matches': recent_matches,
         'weaknesses': 'Takes too long to decide next move.'  # Would need AI analysis
@@ -132,24 +122,24 @@ def calendar():
         return redirect(url_for('login'))
     try:
         # Get all matches with tournament info (show all for now, will filter by user later)
-        matches = db.session.query(Match, Tournament).join(Tournament).order_by(Match.scheduled_date).all()
+        matches = db.session.query(Match, Tournament).join(Tournament).order_by(Match.date_played).all()
         
         # Format events for FullCalendar
         events = []
         for match, tournament in matches:
-            event_color = '#6c757d'  # default gray for draw
+            event_colour = '#6c757d'  # default gray for draw
             if match.result == 'pending':
-                event_color = '#ffc107'  # yellow for pending
+                event_colour = '#ffc107'  # yellow for pending
             elif match.result == 'win':
-                event_color = '#28a745'  # green for win
+                event_colour = '#28a745'  # green for win
             elif match.result == 'loss':
-                event_color = '#dc3545'  # red for loss
+                event_colour = '#dc3545'  # red for loss
                 
             events.append({
-                'title': f"{match.player1} vs {match.player2} - {tournament.name}",
-                'start': match.scheduled_date.isoformat(),
-                'backgroundColor': event_color,
-                'borderColor': event_color
+                'title': f"{match.player} vs {match.opponent} - {tournament.name}",
+                'start': match.date_played.isoformat(),
+                'backgroundcolour': event_colour,
+                'bordercolour': event_colour
             })
         
         return render_template('calendar.html', matches=matches, events=events, username=session['username'])
@@ -193,30 +183,32 @@ def login():
 
 @app.route('/new_record', methods=['GET', 'POST'])
 def new_record():
+    if 'username' not in session:
+        flash('Please log in to access this page!', 'error')
+        return redirect(url_for('login'))
     if request.method == 'POST':
-        opponent = request.form['opponent']
-        result = request.form['result']
-        colour = request.form['colour']
-        opening = request.form.get('opening', '')
-        moves = request.form.get('moves', None)
-        date_played = request.form['date_played']
-        notes = request.form.get('notes', '')
+        try:
+            opponent = request.form['opponent']
+            result = request.form['result']
+            colour = request.form['colour']
+            termination = request.form['termination']
+            date_played = date.fromisoformat(request.form['date_played'])
+            game_record = request.form.get('game_record', '')
+            date_created = date.today()
+        except Exception as e:
+            flash('Please fill in all required fields correctly!', 'error')
+            return render_template('new_record.html')
 
-        if moves:
-            try:
-                moves = int(moves)
-            except ValueError:
-                flash('Number of moves must be a valid number!', 'error')
-                return render_template('new_record.html')
 
-        record = GameRecord(
+        record = Match(
+            moves=game_record,
+            player=session['username'],
             opponent=opponent,
             result=result,
-            colour=colour,
-            opening=opening,
-            moves=moves,
+            player_colour=colour,
             date_played=date_played,
-            notes=notes
+            termination=termination,
+            created_at=date_created
         )
         db.session.add(record)
         db.session.commit()
