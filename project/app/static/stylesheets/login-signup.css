@@ -64,3 +64,8 @@ a:hover{
 .btn-secondary{
     background-color: #343a40;
 }
+
+.forgot-pass{
+    color: black;
+    margin-bottom: 10px;
+}

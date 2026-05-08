@@ -7,7 +7,6 @@ def reset_password_email(username, email, code):
     sender_email = "chessmate.support@gmail.com"
     receiver_email = str(email)
     app_password = "pcqb gcuv avgh zjsj"
-    readablecode = ""
 
     # Create the email
     msg = MIMEMultipart()
