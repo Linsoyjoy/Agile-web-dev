@@ -166,14 +166,28 @@ def login():
             flash('Please enter both username and password!', 'error')
             return render_template('login.html')
     
+        #Check if a valid username was entered
         user = User.query.filter_by(username=username).first()
+        if user:
+            if check_password_hash(user.password_hash, password):
+                session['username'] = username
+                flash('Login successful!', 'success')
+                return redirect(url_for('home'))
+            else:
+                #The username was valid but password incorrect
+                flash('Invalid username or password!', 'error')
 
-        if user and check_password_hash(user.password_hash, password):
-            session['username'] = username
-            flash('Login successful!', 'success')
-            return redirect(url_for('home'))
+
+        #Username was not valid, check if it's an email instead 
         else:
-            flash('Incorrect username or password!', 'error')
+            user = User.query.filter_by(email=username).first()
+            if user and check_password_hash(user.password_hash, password):
+                session['username'] = user.username
+                flash('Login successful!', 'success')
+                return redirect(url_for('home'))
+            else:
+                #Either password was incorrect or email not to valid user
+                flash('Invalid username or password!', 'error')
     
     return render_template('login.html')
 
