@@ -6,16 +6,6 @@ class User(db.Model):
     email = db.Column(db.String(100), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
 
-class GameRecord(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    opponent = db.Column(db.String(100), nullable=False)
-    result = db.Column(db.String(10), nullable=False)
-    colour = db.Column(db.String(10), nullable=False)
-    opening = db.Column(db.String(100))
-    moves = db.Column(db.Integer)
-    date_played = db.Column(db.String(20), nullable=False)
-    notes = db.Column(db.Text)
-
 class Tournament(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(200), nullable=False)
@@ -28,13 +18,14 @@ class Tournament(db.Model):
 
 class Match(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    tournament_id = db.Column(db.Integer, db.ForeignKey('tournament.id'), nullable=False)
-    player1 = db.Column(db.String(100), db.ForeignKey('user.username'), nullable=False)
-    player2 = db.Column(db.String(100), db.ForeignKey('user.username'), nullable=False)
-    player1_color = db.Column(db.String(5), nullable=False)  # 'white' or 'black'
-    player2_color = db.Column(db.String(5), nullable=False)  # 'white' or 'black'
-    scheduled_date = db.Column(db.DateTime, nullable=False)
+    tournament_id = db.Column(db.Integer, db.ForeignKey('tournament.id'), nullable=True)
+    moves = db.Column(db.String(8000), nullable=False)  # Store moves in PGN format
+    player = db.Column(db.String(100), db.ForeignKey('user.username'), nullable=False)
+    opponent = db.Column(db.String(100), nullable=False)
+    player_colour = db.Column(db.String(5), nullable=False)  # 'white' or 'black'
     result = db.Column(db.String(20))  # 'win', 'loss', 'draw', or 'pending'
+    termination = db.Column(db.String(50))  # reason game ended (e.g. 'checkmate', 'resignation', 'timeout', etc.)
+    date_played = db.Column(db.DateTime, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 # Create database tables
