@@ -104,3 +104,33 @@ body {
 .fc-event:hover {
     opacity: 0.8;
 }
+
+/* Dark mode overrides for custom components */
+[data-bs-theme="dark"] body {
+    background-color: #1a1d21;
+}
+
+[data-bs-theme="dark"] .hero,
+[data-bs-theme="dark"] .header,
+[data-bs-theme="dark"] .profile-header,
+[data-bs-theme="dark"] .calendar-header {
+    background-color: #2c3036;
+}
+
+[data-bs-theme="dark"] .graph-placeholder {
+    background-color: #2c3036;
+    border-color: #495057;
+    color: #adb5bd;
+}
+
+[data-bs-theme="dark"] .match-item {
+    background-color: #2c3036;
+}
+
+[data-bs-theme="dark"] .match-item:hover {
+    background-color: #343a40;
+}
+
+[data-bs-theme="dark"] .stat-item {
+    border-bottom-color: #495057;
+}
