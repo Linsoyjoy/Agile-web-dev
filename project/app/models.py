@@ -5,6 +5,7 @@ class User(db.Model):
     username = db.Column(db.String(100), unique=True, nullable=False, primary_key=True)
     email = db.Column(db.String(100), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
+    profile_pic = db.Column(db.String(200), nullable=True)
 
 class Tournament(db.Model):
     id = db.Column(db.Integer, primary_key=True)
