@@ -2,11 +2,42 @@ import os
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
 from app import app, db
 from app.models import User, Tournament, Match
 from app.forgot_password import reset_password_email
 from datetime import date
 import datetime
+
+@app.context_processor
+def inject_profile_pic():
+    if 'username' in session:
+        user = User.query.filter_by(username=session['username']).first()
+        if user:
+            return {'profile_pic': user.profile_pic}
+    return {'profile_pic': None}
+
+@app.route('/upload_profile_pic', methods=['POST'])
+def upload_profile_pic():
+    if 'username' not in session:
+        return redirect(url_for('login'))
+    if 'profile_pic' not in request.files or request.files['profile_pic'].filename == '':
+        flash('No file selected', 'error')
+        return redirect(url_for('profile'))
+    file = request.files['profile_pic']
+    ext = file.filename.rsplit('.', 1)[-1].lower()
+    if ext not in {'png', 'jpg', 'jpeg', 'gif'}:
+        flash('Only PNG, JPG and GIF files are allowed', 'error')
+        return redirect(url_for('profile'))
+    filename = secure_filename(session['username'] + '.' + ext)
+    upload_dir = os.path.join(app.static_folder, 'images', 'profiles')
+    os.makedirs(upload_dir, exist_ok=True)
+    file.save(os.path.join(upload_dir, filename))
+    user = User.query.filter_by(username=session['username']).first()
+    user.profile_pic = filename
+    db.session.commit()
+    flash('Profile picture updated!', 'success')
+    return redirect(url_for('profile'))
 
 @app.route('/')
 def home():

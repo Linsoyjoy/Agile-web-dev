@@ -7,8 +7,10 @@ function toggleTheme() {
 }
 
 function updateToggleButton(theme) {
-  var btn = document.getElementById('theme-toggle');
-  if (btn) btn.textContent = theme === 'dark' ? 'Light Mode' : 'Dark Mode';
+  var label = document.getElementById('theme-label');
+  var icon = document.getElementById('theme-icon');
+  if (label) label.textContent = theme === 'dark' ? 'Light Mode' : 'Dark Mode';
+  if (icon) icon.className = theme === 'dark' ? 'bi bi-sun me-2' : 'bi bi-moon me-2';
 }
 
 document.addEventListener('DOMContentLoaded', function() {
