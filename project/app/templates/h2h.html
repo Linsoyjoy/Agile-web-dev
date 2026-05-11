@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% block title %}Head-to-Head - Chessmate{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+  <div class="header text-center mb-4">
+    <h2>Head-to-Head</h2>
+    <p>Compare your record against another player.</p>
+  </div>
+
+  <!-- Opponent picker -->
+  <div class="row justify-content-center mb-4">
+    <div class="col-md-5">
+      <form method="GET" action="{{ url_for('h2h') }}" class="d-flex gap-2">
+        <select name="opponent" class="form-select" required>
+          <option value="" disabled {% if not opponent %}selected{% endif %}>Select opponent…</option>
+          {% for u in all_users %}
+          <option value="{{ u }}" {% if u == opponent %}selected{% endif %}>{{ u }}</option>
+          {% endfor %}
+        </select>
+        <button type="submit" class="btn btn-primary">Go</button>
+      </form>
+    </div>
+  </div>
+
+  {% if opponent and stats %}
+
+  <!-- Summary banner -->
+  <div class="row justify-content-center mb-4">
+    <div class="col-md-8">
+      <div class="card card-ui p-4 text-center">
+        <div class="row align-items-center">
+
+          <!-- Me -->
+          <div class="col-4">
+            <div class="fw-bold fs-5">{{ username }}</div>
+            <div class="display-6 fw-bold text-success">{{ stats.my_wins }}</div>
+            <small class="text-muted">Wins</small>
+          </div>
+
+          <!-- Draws -->
+          <div class="col-4">
+            <div class="text-muted small mb-1">Draws</div>
+            <div class="fs-4 fw-semibold">{{ stats.my_draws }}</div>
+            <div class="text-muted small mt-1">{{ stats.total }} game{{ 's' if stats.total != 1 }}</div>
+          </div>
+
+          <!-- Opponent -->
+          <div class="col-4">
+            <div class="fw-bold fs-5">{{ opponent }}</div>
+            <div class="display-6 fw-bold text-danger">{{ stats.opp_wins }}</div>
+            <small class="text-muted">Wins</small>
+          </div>
+
+        </div>
+
+        <!-- Win bar -->
+        {% if stats.total > 0 %}
+        <div class="mt-3">
+          {% set my_pct = (stats.my_wins / stats.total * 100) | round(1) %}
+          {% set opp_pct = (stats.opp_wins / stats.total * 100) | round(1) %}
+          {% set draw_pct = (stats.my_draws / stats.total * 100) | round(1) %}
+          <div class="progress" style="height: 12px;" title="{{ username }}: {{ my_pct }}%  Draws: {{ draw_pct }}%  {{ opponent }}: {{ opp_pct }}%">
+            {% if my_pct > 0 %}
+            <div class="progress-bar bg-success" style="width: {{ my_pct }}%"></div>
+            {% endif %}
+            {% if draw_pct > 0 %}
+            <div class="progress-bar bg-secondary" style="width: {{ draw_pct }}%"></div>
+            {% endif %}
+            {% if opp_pct > 0 %}
+            <div class="progress-bar bg-danger" style="width: {{ opp_pct }}%"></div>
+            {% endif %}
+          </div>
+          <div class="d-flex justify-content-between mt-1 small text-muted">
+            <span>{{ my_pct }}%</span>
+            <span>{{ opp_pct }}%</span>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Match list -->
+  {% if matches %}
+  <div class="row justify-content-center">
+    <div class="col-md-8">
+      <h5 class="section-title mb-3">Match History</h5>
+      <div class="card card-ui p-3">
+        <table class="table table-hover mb-0">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Your colour</th>
+              <th>Result</th>
+              <th>Ended by</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for m in matches %}
+            <tr>
+              <td>{{ m.date }}</td>
+              <td class="text-capitalize">{{ m.colour }}</td>
+              <td>
+                {% if m.player_result | lower == 'win' %}
+                  <span class="badge bg-success">Win</span>
+                {% elif m.player_result | lower == 'loss' %}
+                  <span class="badge bg-danger">Loss</span>
+                {% else %}
+                  <span class="badge bg-secondary">Draw</span>
+                {% endif %}
+              </td>
+              <td class="text-capitalize">{{ m.termination }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <div class="text-center text-muted mt-2">No recorded games between you and {{ opponent }} yet.</div>
+  {% endif %}
+
+  {% elif opponent %}
+  <div class="text-center text-muted">No data found for that matchup.</div>
+  {% endif %}
+
+</div>
+{% endblock %}
