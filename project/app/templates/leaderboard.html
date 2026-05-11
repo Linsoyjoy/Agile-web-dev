@@ -29,7 +29,7 @@
               <td class="rank-cell" data-rank="{{ loop.index }}">#{{ loop.index }}</td>
               <td>
                 {% if player.username != username %}
-                <a href="{{ url_for('h2h', opponent=player.username) }}" class="text-decoration-none">{{ player.username }}</a>
+                <a href="{{ url_for('main.h2h', opponent=player.username) }}" class="text-decoration-none">{{ player.username }}</a>
                 {% else %}
                 {{ player.username }}
                 {% endif %}

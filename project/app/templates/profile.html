@@ -18,7 +18,7 @@
         <img id="pic-preview" class="rounded-circle border border-secondary d-none"
              width="90" height="90" style="object-fit:cover;" alt="Profile">
       {% endif %}
-      <form method="POST" action="{{ url_for('upload_profile_pic') }}" enctype="multipart/form-data" id="pic-form">
+      <form method="POST" action="{{ url_for('main.upload_profile_pic') }}" enctype="multipart/form-data" id="pic-form">
         <label class="position-absolute bottom-0 end-0 btn btn-sm btn-light rounded-circle p-1 mb-0"
                style="width:28px;height:28px;cursor:pointer;" title="Change photo">
           <i class="bi bi-pencil" style="font-size:12px;"></i>
@@ -29,8 +29,8 @@
     <div>
       <h2>{{ user.username }}</h2>
       <p>Ranking: <strong>{{ stats.ranking }}</strong></p>
-      <button class="btn btn-primary btn-custom">Add Friend</button>
-      <button class="btn btn-success btn-custom">Share Profile</button>
+      <button class="btn btn-primary btn-custom" onclick="addFriend()">Add Friend</button>
+      <button class="btn btn-success btn-custom" onclick="shareProfile()">Share Profile</button>
     </div>
   </div>
 
@@ -89,9 +89,8 @@
   </div>
 
   <div class="mt-4 mb-5">
-    <button class="btn btn-warning">View Full Stats</button>
-    <button class="btn btn-secondary">Find Similar Opponents</button>
-    <button class="btn btn-danger">Report Issue</button>
+    <button class="btn btn-warning" onclick="viewFullStats()">View Full Stats</button>
+    <button class="btn btn-secondary" onclick="findSimilarOpponents()">Find Similar Opponents</button>
   </div>
 
 </div>
@@ -113,5 +112,32 @@
       reader.readAsDataURL(input.files[0]);
     }
   }
-</script>
+
+  function addFriend() {
+    window.location.href = '/friends';
+  }
+
+  function shareProfile() {
+    const profileUrl = window.location.href;
+    if (navigator.share) {
+      navigator.share({
+        title: 'Chessmate Profile',
+        text: 'Check out my chess profile!',
+        url: profileUrl
+      });
+    } else {
+      navigator.clipboard.writeText(profileUrl);
+      alert('Profile link copied to clipboard!');
+    }
+  }
+
+  function viewFullStats() {
+    window.location.href = '/viewstats';
+  }
+
+  function findSimilarOpponents() {
+    window.location.href = '/leaderboard';
+  }
+
+  </script>
 {% endblock %}

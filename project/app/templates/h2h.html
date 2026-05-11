@@ -11,7 +11,7 @@
   <!-- Opponent picker -->
   <div class="row justify-content-center mb-4">
     <div class="col-md-5">
-      <form method="GET" action="{{ url_for('h2h') }}" class="d-flex gap-2">
+      <form method="GET" action="{{ url_for('main.h2h') }}" class="d-flex gap-2">
         <select name="opponent" class="form-select" required>
           <option value="" disabled {% if not opponent %}selected{% endif %}>Select opponent…</option>
           {% for u in all_users %}
