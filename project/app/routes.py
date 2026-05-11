@@ -294,6 +294,76 @@ def leaderboard():
     players.sort(key=lambda x: (x['wins'], x['win_rate']), reverse=True)
     return render_template('leaderboard.html', players=players, username=session['username'])
 
+@app.route('/h2h')
+def h2h():
+    if 'username' not in session:
+        flash('Please log in to access this page!', 'error')
+        return redirect(url_for('login'))
+
+    me = session['username']
+    opponent_name = request.args.get('opponent', '').strip()
+    all_users = [u.username for u in User.query.filter(User.username != me).all()]
+
+    stats = None
+    matches_display = []
+
+    if opponent_name:
+        # Matches recorded by me against them, and by them against me
+        my_matches = Match.query.filter_by(player=me, opponent=opponent_name).order_by(Match.date_played.desc()).all()
+        their_matches = Match.query.filter_by(player=opponent_name, opponent=me).order_by(Match.date_played.desc()).all()
+
+        my_wins = my_losses = my_draws = 0
+
+        for m in my_matches:
+            r = (m.result or '').lower()
+            if r == 'win':
+                my_wins += 1
+            elif r == 'loss':
+                my_losses += 1
+            else:
+                my_draws += 1
+            matches_display.append({
+                'date': m.date_played.strftime('%Y-%m-%d') if m.date_played else '—',
+                'player_result': m.result or 'Unknown',
+                'colour': m.player_colour,
+                'termination': m.termination or '—',
+            })
+
+        for m in their_matches:
+            r = (m.result or '').lower()
+            # Their win = my loss, their loss = my win
+            if r == 'win':
+                my_losses += 1
+                my_result = 'Loss'
+            elif r == 'loss':
+                my_wins += 1
+                my_result = 'Win'
+            else:
+                my_draws += 1
+                my_result = 'Draw'
+            opp_colour = 'black' if m.player_colour == 'white' else 'white'
+            matches_display.append({
+                'date': m.date_played.strftime('%Y-%m-%d') if m.date_played else '—',
+                'player_result': my_result,
+                'colour': opp_colour,
+                'termination': m.termination or '—',
+            })
+
+        matches_display.sort(key=lambda x: x['date'], reverse=True)
+        total = my_wins + my_losses + my_draws
+        stats = {
+            'my_wins': my_wins,
+            'my_losses': my_losses,
+            'my_draws': my_draws,
+            'opp_wins': my_losses,
+            'opp_losses': my_wins,
+            'opp_draws': my_draws,
+            'total': total,
+        }
+
+    return render_template('h2h.html', username=me, opponent=opponent_name,
+                           all_users=all_users, stats=stats, matches=matches_display)
+
 @app.route('/logout')
 def logout():
     session.pop('username', None)
