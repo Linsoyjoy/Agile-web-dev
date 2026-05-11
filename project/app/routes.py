@@ -266,7 +266,7 @@ def query():
         # TODO: Store issue in database or send email
         # For now, just show success message
         flash(f'Issue "{title}" has been submitted successfully! We will review it and get back to you soon.', 'success')
-        return redirect(url_for('main.query'))
+        return redirect(url_for('query'))
 
     return render_template('query.html', username=session['username'])
 
