@@ -270,11 +270,11 @@ def leaderboard():
     players = []
     for u in all_users:
         matches = Match.query.filter(
-            (Match.player1 == u.username) | (Match.player2 == u.username)
+            (Match.player == u.username) | (Match.opponent == u.username)
         ).all()
         wins = losses = draws = 0
         for m in matches:
-            if m.player1 == u.username:
+            if m.player == u.username:
                 if m.result == 'win': wins += 1
                 elif m.result == 'loss': losses += 1
                 else: draws += 1
