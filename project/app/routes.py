@@ -2,12 +2,44 @@ import os
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
+
 from app import db
 from .blueprints import main
 from .models import User, Tournament, Match
 from .forgot_password import reset_password_email
 from datetime import date
 import datetime
+
+@main.context_processor
+def inject_profile_pic():
+    if 'username' in session:
+        user = User.query.filter_by(username=session['username']).first()
+        if user:
+            return {'profile_pic': user.profile_pic}
+    return {'profile_pic': None}
+
+@main.route('/upload_profile_pic', methods=['POST'])
+def upload_profile_pic():
+    if 'username' not in session:
+        return redirect(url_for('main.login'))
+    if 'profile_pic' not in request.files or request.files['profile_pic'].filename == '':
+        flash('No file selected', 'error')
+        return redirect(url_for('main.profile'))
+    file = request.files['profile_pic']
+    ext = file.filename.rsplit('.', 1)[-1].lower()
+    if ext not in {'png', 'jpg', 'jpeg', 'gif'}:
+        flash('Only PNG, JPG and GIF files are allowed', 'error')
+        return redirect(url_for('main.profile'))
+    filename = secure_filename(session['username'] + '.' + ext)
+    upload_dir = os.path.join(main.static_folder, 'images', 'profiles')
+    os.makedirs(upload_dir, exist_ok=True)
+    file.save(os.path.join(upload_dir, filename))
+    user = User.query.filter_by(username=session['username']).first()
+    user.profile_pic = filename
+    db.session.commit()
+    flash('Profile picture updated!', 'success')
+    return redirect(url_for('main.profile'))
 
 @main.route('/')
 def home():
@@ -218,6 +250,26 @@ def new_record():
 
     return render_template('new_record.html')
 
+@main.route('/query', methods=['GET', 'POST'])
+def query():
+    if 'username' not in session:
+        flash('Please log in to access this page!', 'error')
+        return redirect(url_for('main.login'))
+    
+    if request.method == 'POST':
+        issue_type = request.form['issue_type']
+        title = request.form['title']
+        description = request.form['description']
+        priority = request.form['priority']
+        email = request.form.get('email', '')
+        
+        # TODO: Store issue in database or send email
+        # For now, just show success message
+        flash(f'Issue "{title}" has been submitted successfully! We will review it and get back to you soon.', 'success')
+        return redirect(url_for('main.query'))
+
+    return render_template('query.html', username=session['username'])
+
 @main.route('/faq', methods=['GET', 'POST'])
 def faq():
     if request.method == 'POST':
@@ -240,11 +292,11 @@ def leaderboard():
     players = []
     for u in all_users:
         matches = Match.query.filter(
-            (Match.player1 == u.username) | (Match.player2 == u.username)
+            (Match.player == u.username) | (Match.opponent == u.username)
         ).all()
         wins = losses = draws = 0
         for m in matches:
-            if m.player1 == u.username:
+            if m.player == u.username:
                 if m.result == 'win': wins += 1
                 elif m.result == 'loss': losses += 1
                 else: draws += 1

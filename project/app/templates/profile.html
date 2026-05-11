@@ -1,127 +1,117 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <script>(function(){var t=localStorage.getItem('chessmate-theme')||'light';document.documentElement.setAttribute('data-bs-theme',t);})();</script>
-  <title>Profile Page</title>
+{% extends "base.html" %}
+{% block title %}Profile - Chessmate{% endblock %}
 
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='stylesheets/main.css') }}">
-</head>
+{% block content %}
+<div class="container mt-5">
 
-<body>
-  <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-    <div class="container-fluid">
-      <a class="navbar-brand" href="#">Chessmate</a>
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse">
-        <span class="navbar-toggler-icon"></span>
-      </button>
-      <div class="collapse navbar-collapse">
-        <ul class="navbar-nav ms-auto">
-          <li class="nav-item">
-            <a class="nav-link" href="/">Home</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link active" href="/profile">Profile</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="/friends">Friends</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="/viewstats">Stats</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="/calendar">Calendar</a>
-          </li>
-          <li class="nav-item ms-2">
-            <button class="btn btn-sm btn-outline-light" id="theme-toggle" onclick="toggleTheme()">Dark Mode</button>
-          </li>
+  <div class="profile-header d-flex align-items-center gap-4">
+    <div class="position-relative">
+      {% if profile_pic %}
+        <img src="{{ url_for('static', filename='images/profiles/' + profile_pic) }}"
+             id="pic-preview" class="rounded-circle border border-secondary"
+             width="90" height="90" style="object-fit:cover;" alt="Profile">
+      {% else %}
+        <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center text-white fw-bold"
+             id="pic-initials" style="width:90px;height:90px;font-size:36px;">
+          {{ user.username[0].upper() }}
+        </div>
+        <img id="pic-preview" class="rounded-circle border border-secondary d-none"
+             width="90" height="90" style="object-fit:cover;" alt="Profile">
+      {% endif %}
+      <form method="POST" action="{{ url_for('main.upload_profile_pic') }}" enctype="multipart/form-data" id="pic-form">
+        <label class="position-absolute bottom-0 end-0 btn btn-sm btn-light rounded-circle p-1 mb-0"
+               style="width:28px;height:28px;cursor:pointer;" title="Change photo">
+          <i class="bi bi-pencil" style="font-size:12px;"></i>
+          <input type="file" name="profile_pic" id="pic-input" accept="image/*" onchange="previewPic(this)" hidden>
+        </label>
+      </form>
+    </div>
+    <div>
+      <h2>{{ user.username }}</h2>
+      <p>Ranking: <strong>{{ stats.ranking }}</strong></p>
+      <button class="btn btn-primary btn-custom">Add Friend</button>
+      <button class="btn btn-success btn-custom">Share Profile</button>
+    </div>
+  </div>
+
+  <div class="row mt-4">
+    <div class="col-md-3">
+      <div class="card stat-card p-3 text-center">
+        <h5>Wins</h5>
+        <h3>{{ stats.wins }}</h3>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card stat-card p-3 text-center">
+        <h5>Losses</h5>
+        <h3>{{ stats.losses }}</h3>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card stat-card p-3 text-center">
+        <h5>Draws</h5>
+        <h3>{{ stats.draws }}</h3>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card stat-card p-3 text-center">
+        <h5>Win Rate</h5>
+        <h3>{{ stats.win_rate }}%</h3>
+      </div>
+    </div>
+  </div>
+
+  <div class="row mt-4">
+    <div class="col-md-6">
+      <div class="card p-3">
+        <h5>Performance by Colour</h5>
+        <ul class="list-group">
+          <li class="list-group-item">White: {{ stats.white_win_rate }}% Win Rate</li>
+          <li class="list-group-item">Black: {{ stats.black_win_rate }}% Win Rate</li>
         </ul>
       </div>
     </div>
-  </nav>
-
-  <div class="container mt-5">
-    <div class="profile-header d-flex align-items-center">
-      <div>
-        <h2>{{ user.username }}</h2>
-        <p>Ranking: <strong>{{ stats.ranking }}</strong></p>
-        <button class="btn btn-primary btn-custom">Add Friend</button>
-        <button class="btn btn-success btn-custom">Share Profile</button>
+    <div class="col-md-6">
+      <div class="card p-3">
+        <h5>Recent Matches</h5>
+        <ul class="list-group">
+          {% for match in stats.recent_matches %}
+          <li class="list-group-item">{{ match.result }} vs {{ match.opponent }}</li>
+          {% endfor %}
+        </ul>
       </div>
     </div>
-
-    <div class="row mt-4">
-      <div class="col-md-3">
-        <div class="card stat-card p-3 text-center">
-          <h5>Wins</h5>
-          <h3>{{ stats.wins }}</h3>
-        </div>
-      </div>
-      <div class="col-md-3">
-        <div class="card stat-card p-3 text-center">
-          <h5>Losses</h5>
-          <h3>{{ stats.losses }}</h3>
-        </div>
-      </div>
-      <div class="col-md-3">
-        <div class="card stat-card p-3 text-center">
-          <h5>Draws</h5>
-          <h3>{{ stats.draws }}</h3>
-        </div>
-      </div>
-      <div class="col-md-3">
-        <div class="card stat-card p-3 text-center">
-          <h5>Win Rate</h5>
-          <h3>{{ stats.win_rate }}%</h3>
-        </div>
-      </div>
-    </div>
-
-    <div class="row mt-4">
-      <div class="col-md-6">
-        <div class="card p-3">
-          <h5>Performance by Colour</h5>
-          <ul class="list-group">
-            <li class="list-group-item">White: {{ stats.white_win_rate }}% Win Rate</li>
-            <li class="list-group-item">Black: {{ stats.black_win_rate }}% Win Rate</li>
-          </ul>
-        </div>
-      </div>
-
-      <div class="col-md-6">
-        <div class="card p-3">
-          <h5>Recent Matches</h5>
-          <ul class="list-group">
-            {% for match in stats.recent_matches %}
-            <li class="list-group-item">{{ match.result }} vs {{ match.opponent }}</li>
-            {% endfor %}
-          </ul>
-        </div>
-      </div>
-    </div>
-
-    <div class="card mt-4 p-3">
-      <h5>Identified Weaknesses</h5>
-      <p>{{ stats.weaknesses }}</p>
-    </div>
-
-    <div class="mt-4">
-      <button class="btn btn-warning">View Full Stats</button>
-      <button class="btn btn-secondary">Find Similar Opponents</button>
-      <button class="btn btn-danger">Report Issue</button>
-    </div>
-
   </div>
 
-  <!-- Logout Button at Bottom -->
-  <div class="fixed-bottom mb-3 text-center">
-    <a href="/logout" class="btn btn-danger btn-lg">Logout</a>
+  <div class="card mt-4 p-3">
+    <h5>Identified Weaknesses</h5>
+    <p>{{ stats.weaknesses }}</p>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+  <div class="mt-4 mb-5">
+    <button class="btn btn-warning">View Full Stats</button>
+    <button class="btn btn-secondary">Find Similar Opponents</button>
+    <button class="btn btn-danger">Report Issue</button>
+  </div>
 
-</body>
-</html>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function previewPic(input) {
+    if (input.files && input.files[0]) {
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        var preview = document.getElementById('pic-preview');
+        var initials = document.getElementById('pic-initials');
+        preview.src = e.target.result;
+        preview.classList.remove('d-none');
+        if (initials) initials.style.display = 'none';
+        document.getElementById('pic-form').submit();
+      };
+      reader.readAsDataURL(input.files[0]);
+    }
+  }
+</script>
+{% endblock %}

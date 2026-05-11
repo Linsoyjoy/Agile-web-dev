@@ -134,3 +134,7 @@ body {
 [data-bs-theme="dark"] .stat-item {
     border-bottom-color: #495057;
 }
+
+.logo{
+    width: 200px;
+}
