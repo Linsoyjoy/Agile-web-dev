@@ -27,7 +27,13 @@
             {% for player in players %}
             <tr {% if player.username == username %}class="table-active fw-bold"{% endif %}>
               <td class="rank-cell" data-rank="{{ loop.index }}">#{{ loop.index }}</td>
-              <td>{{ player.username }}</td>
+              <td>
+                {% if player.username != username %}
+                <a href="{{ url_for('h2h', opponent=player.username) }}" class="text-decoration-none">{{ player.username }}</a>
+                {% else %}
+                {{ player.username }}
+                {% endif %}
+              </td>
               <td>{{ player.wins }}</td>
               <td>{{ player.losses }}</td>
               <td>{{ player.draws }}</td>
