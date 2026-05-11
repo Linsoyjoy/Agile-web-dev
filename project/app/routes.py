@@ -248,6 +248,26 @@ def new_record():
 
     return render_template('new_record.html')
 
+@app.route('/query', methods=['GET', 'POST'])
+def query():
+    if 'username' not in session:
+        flash('Please log in to access this page!', 'error')
+        return redirect(url_for('login'))
+    
+    if request.method == 'POST':
+        issue_type = request.form['issue_type']
+        title = request.form['title']
+        description = request.form['description']
+        priority = request.form['priority']
+        email = request.form.get('email', '')
+        
+        # TODO: Store issue in database or send email
+        # For now, just show success message
+        flash(f'Issue "{title}" has been submitted successfully! We will review it and get back to you soon.', 'success')
+        return redirect(url_for('query'))
+
+    return render_template('query.html', username=session['username'])
+
 @app.route('/faq', methods=['GET', 'POST'])
 def faq():
     if request.method == 'POST':
