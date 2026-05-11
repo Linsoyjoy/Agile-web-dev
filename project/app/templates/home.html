@@ -6,25 +6,27 @@
   <div class="hero">
     <h1>Welcome back, {{ username }}!</h1>
     <h4>Track your chess games, analyze your performance, and improve your skills.</h4><br>
-    <a href="{{url_for('main.new_record')}}" class="btn btn-secondary btn-lg btn-block">Add new record</a>
   </div>
   <div class="row mt-4">
     <div class="col-md-4">
       <div class="card feature-card p-3 text-center">
         <h5>Game Tracking</h5>
         <p>Log and review all your matches in one place.</p>
+        <a href="{{url_for('main.new_record')}}" class="btn btn-secondary btn-lg btn-block">Add new record</a>
       </div>
     </div>
     <div class="col-md-4">
       <div class="card feature-card p-3 text-center">
         <h5>Performance Stats</h5>
         <p>Find the most important areas to improve.</p>
+        <a href="{{url_for('main.viewstats')}}" class="btn btn-secondary btn-lg btn-block">View statistics</a>
       </div>
     </div>
     <div class="col-md-4">
       <div class="card feature-card p-3 text-center">
         <h5>Opponent Matching</h5>
         <p>Find other players of similar skill levels.</p>
+        <a href="{{url_for('main.friends')}}" class="btn btn-secondary btn-lg btn-block">Find players</a>
       </div>
     </div>
   </div>

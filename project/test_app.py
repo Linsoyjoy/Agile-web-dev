@@ -195,9 +195,6 @@ class ChessMateUnitTestCase(unittest.TestCase):
         self.assertEqual(match.player_colour, 'White')
         self.assertEqual(match.result, 'Win')
         self.assertEqual(match.termination, 'Checkmate')
-    
-
-
 
 if __name__ == '__main__':
     unittest.main()
