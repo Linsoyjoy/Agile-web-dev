@@ -6,7 +6,7 @@
   <div class="card record-card p-4">
     <h2 class="mb-4">Add New Game Record</h2>
 
-    <form method="post" action="{{ url_for('new_record') }}">
+    <form method="post" action="{{ url_for('main.new_record') }}">
       <div class="row g-3">
         <div class="col-md-6">
           <label class="form-label" for="opponent">Opponent</label>
@@ -61,7 +61,7 @@
 
         <div class="col-12 text-end">
           <button class="btn btn-primary" type="submit">Save Record</button>
-          <a class="btn btn-secondary" href="{{ url_for('viewstats') }}">Cancel</a>
+          <a class="btn btn-secondary" href="{{ url_for('main.viewstats') }}">Cancel</a>
         </div>
       </div>
     </form>

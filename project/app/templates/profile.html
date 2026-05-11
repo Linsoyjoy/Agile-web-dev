@@ -18,7 +18,7 @@
         <img id="pic-preview" class="rounded-circle border border-secondary d-none"
              width="90" height="90" style="object-fit:cover;" alt="Profile">
       {% endif %}
-      <form method="POST" action="{{ url_for('upload_profile_pic') }}" enctype="multipart/form-data" id="pic-form">
+      <form method="POST" action="{{ url_for('main.upload_profile_pic') }}" enctype="multipart/form-data" id="pic-form">
         <label class="position-absolute bottom-0 end-0 btn btn-sm btn-light rounded-circle p-1 mb-0"
                style="width:28px;height:28px;cursor:pointer;" title="Change photo">
           <i class="bi bi-pencil" style="font-size:12px;"></i>
