@@ -1,4 +1,4 @@
-from app import app, db
+from app import db
 from datetime import datetime
 
 class User(db.Model):
@@ -27,7 +27,3 @@ class Match(db.Model):
     termination = db.Column(db.String(50))  # reason game ended (e.g. 'checkmate', 'resignation', 'timeout', etc.)
     date_played = db.Column(db.DateTime, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-
-# Create database tables
-with app.app_context():
-    db.create_all()

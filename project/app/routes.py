@@ -2,37 +2,38 @@ import os
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
-from app import app, db
-from app.models import User, Tournament, Match
-from app.forgot_password import reset_password_email
+from app import db
+from .blueprints import main
+from .models import User, Tournament, Match
+from .forgot_password import reset_password_email
 from datetime import date
 import datetime
 
-@app.route('/')
+@main.route('/')
 def home():
     if 'username' not in session:
         return render_template('landing.html')
     return render_template('home.html', username=session['username'])
 
-@app.route('/friends')
+@main.route('/friends')
 def friends():
     if 'username' not in session:
         flash('Please log in to access this page!', 'error')
-        return redirect(url_for('login'))
+        return redirect(url_for('main.login'))
     return render_template('friends.html', username=session['username'])
 
-@app.route('/profile')
+@main.route('/profile')
 def profile():
     if 'username' not in session:
         flash('Please log in to access this page!', 'error')
-        return redirect(url_for('login'))
+        return redirect(url_for('main.login'))
     
     username = session['username']
     user = User.query.filter_by(username=username).first()
     
     if not user:
         flash('User not found!', 'error')
-        return redirect(url_for('login'))
+        return redirect(url_for('main.login'))
     
     # Calculate real statistics from match data
     user_matches = Match.query.filter(
@@ -108,18 +109,18 @@ def profile():
     
     return render_template('profile.html', user=user, stats=user_stats, username=username)
 
-@app.route('/viewstats')
+@main.route('/viewstats')
 def viewstats():
     if 'username' not in session:
         flash('Please log in to access this page!', 'error')
-        return redirect(url_for('login'))
+        return redirect(url_for('main.login'))
     return render_template('viewstats.html', username=session['username'])
 
-@app.route('/calendar')
+@main.route('/calendar')
 def calendar():
     if 'username' not in session:
         flash('Please log in to access this page!', 'error')
-        return redirect(url_for('login'))
+        return redirect(url_for('main.login'))
     try:
         # Get all matches with tournament info (show all for now, will filter by user later)
         matches = db.session.query(Match, Tournament).join(Tournament).order_by(Match.date_played).all()
@@ -147,11 +148,11 @@ def calendar():
         # Handle case where tables don't exist or no data
         return render_template('calendar.html', matches=[], events=[], username=session['username'])
 
-@app.route('/login', methods=['GET', 'POST'])
+@main.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        username = request.form['Username']
-        password = request.form['Password']
+        username = request.form['username']
+        password = request.form['password']
         if not username or not password:
             flash('Please enter both username and password!', 'error')
             return render_template('login.html')
@@ -162,7 +163,7 @@ def login():
             if check_password_hash(user.password_hash, password):
                 session['username'] = username
                 flash('Login successful!', 'success')
-                return redirect(url_for('home'))
+                return redirect(url_for('main.home'))
             else:
                 #The username was valid but password incorrect
                 flash('Invalid username or password!', 'error')
@@ -174,18 +175,18 @@ def login():
             if user and check_password_hash(user.password_hash, password):
                 session['username'] = user.username
                 flash('Login successful!', 'success')
-                return redirect(url_for('home'))
+                return redirect(url_for('main.home'))
             else:
                 #Either password was incorrect or email not to valid user
                 flash('Invalid username or password!', 'error')
     
     return render_template('login.html')
 
-@app.route('/new_record', methods=['GET', 'POST'])
+@main.route('/new_record', methods=['GET', 'POST'])
 def new_record():
     if 'username' not in session:
         flash('Please log in to access this page!', 'error')
-        return redirect(url_for('login'))
+        return redirect(url_for('main.login'))
     if request.method == 'POST':
         try:
             opponent = request.form['opponent']
@@ -213,11 +214,11 @@ def new_record():
         db.session.add(record)
         db.session.commit()
         flash('Game recorded successfully!', 'success')
-        return redirect(url_for('viewstats'))
+        return redirect(url_for('main.viewstats'))
 
     return render_template('new_record.html')
 
-@app.route('/faq', methods=['GET', 'POST'])
+@main.route('/faq', methods=['GET', 'POST'])
 def faq():
     if request.method == 'POST':
         name = request.form['name']
@@ -225,15 +226,15 @@ def faq():
         query = request.form['query']
         # TODO: Store query in database or send email
         flash('Your query has been submitted successfully! We will get back to you soon.', 'success')
-        return redirect(url_for('faq'))
+        return redirect(url_for('main.faq'))
 
     return render_template('faq.html')
 
-@app.route('/leaderboard')
+@main.route('/leaderboard')
 def leaderboard():
     if 'username' not in session:
         flash('Please log in to access this page!', 'error')
-        return redirect(url_for('login'))
+        return redirect(url_for('main.login'))
 
     all_users = User.query.all()
     players = []
@@ -263,13 +264,13 @@ def leaderboard():
     players.sort(key=lambda x: (x['wins'], x['win_rate']), reverse=True)
     return render_template('leaderboard.html', players=players, username=session['username'])
 
-@app.route('/logout')
+@main.route('/logout')
 def logout():
     session.pop('username', None)
     flash('You have been logged out!', 'success')
-    return redirect(url_for('home'))
+    return redirect(url_for('main.home'))
 
-@app.route('/signup', methods=['GET', 'POST'])
+@main.route('/signup', methods=['GET', 'POST'])
 def signup():
     if request.method == 'POST':
         username = request.form['username']
@@ -298,11 +299,11 @@ def signup():
         db.session.add(new_user)
         db.session.commit()
         flash('Account created successfully! Please log in.', 'success')
-        return redirect(url_for('login'))
+        return redirect(url_for('main.login'))
     
     return render_template('signup.html')
 
-@app.route('/forgotpassword', methods=['GET', 'POST'])
+@main.route('/forgotpassword', methods=['GET', 'POST'])
 def forgotpassword():
     if 'resetstep' not in session:
         session['resetstep'] = 1
@@ -360,7 +361,7 @@ def forgotpassword():
                         flash('Your password has been reset successfully! Please log in with your new password.', 'success')
                         session.pop('resetcode', None)
                         session['resetstep'] = 1
-                        return redirect(url_for('login'))
+                        return redirect(url_for('main.login'))
                     else:
                         flash('An error occurred while resetting your password. Please try again.', 'error')
                         session['resetstep'] = 1
