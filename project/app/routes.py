@@ -127,16 +127,63 @@ def profile():
     user_rankings.sort(key=lambda x: x[1], reverse=True)
     user_rank = next((i+1 for i, (u, _) in enumerate(user_rankings) if u == username), len(user_rankings))
     
+    # Calculate color-specific win rates
+    white_wins = white_losses = white_draws = 0
+    black_wins = black_losses = black_draws = 0
+    
+    for match in user_matches:
+        if match.player_colour.lower() == 'white':
+            if match.result.lower() == 'win':
+                white_wins += 1
+            elif match.result.lower() == 'loss':
+                white_losses += 1
+            else:
+                white_draws += 1
+        else:  # black
+            if match.result.lower() == 'win':
+                black_wins += 1
+            elif match.result.lower() == 'loss':
+                black_losses += 1
+            else:
+                black_draws += 1
+    
+    white_total = white_wins + white_losses + white_draws
+    black_total = black_wins + black_losses + black_draws
+    white_win_rate = round((white_wins / white_total * 100) if white_total > 0 else 0, 1)
+    black_win_rate = round((black_wins / black_total * 100) if black_total > 0 else 0, 1)
+    
+    # Analyze weaknesses based on performance data
+    weaknesses = []
+    if losses > wins * 1.5:
+        weaknesses.append("High loss rate - focus on defensive strategies")
+    if black_win_rate < white_win_rate - 10:
+        weaknesses.append("Struggles playing as black - study black opening strategies")
+    if white_win_rate < black_win_rate - 10:
+        weaknesses.append("Struggles playing as white - improve opening repertoire")
+    if total_games < 10:
+        weaknesses.append("Limited experience - play more games to improve")
+    
+    # Analyze termination patterns
+    timeouts = sum(1 for match in user_matches if match.termination and 'timeout' in match.termination.lower())
+    resignations = sum(1 for match in user_matches if match.termination and 'resign' in match.termination.lower())
+    
+    if timeouts > total_games * 0.3:
+        weaknesses.append("Frequent timeouts - improve time management")
+    if resignations > total_games * 0.4:
+        weaknesses.append("Early resignations - develop endgame skills")
+    
+    weaknesses_text = "; ".join(weaknesses) if weaknesses else "Keep practicing to identify areas for improvement!"
+    
     user_stats = {
         'wins': wins,
         'losses': losses,
         'draws': draws,
         'win_rate': win_rate,
-        'white_win_rate': win_rate,  # Simplified - would need to track piece colours
-        'black_win_rate': win_rate,  # Simplified - would need to track piece colours
+        'white_win_rate': white_win_rate,
+        'black_win_rate': black_win_rate,
         'ranking': f'#{user_rank}',
         'recent_matches': recent_matches,
-        'weaknesses': 'Takes too long to decide next move.'  # Would need AI analysis
+        'weaknesses': weaknesses_text
     }
     
     return render_template('profile.html', user=user, stats=user_stats, username=username)
