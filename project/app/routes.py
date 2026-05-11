@@ -3,13 +3,15 @@ from flask import Flask, render_template, request, redirect, url_for, flash, jso
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
-from app import app, db
-from app.models import User, Tournament, Match
-from app.forgot_password import reset_password_email
+
+from app import db
+from .blueprints import main
+from .models import User, Tournament, Match
+from .forgot_password import reset_password_email
 from datetime import date
 import datetime
 
-@app.context_processor
+@main.context_processor
 def inject_profile_pic():
     if 'username' in session:
         user = User.query.filter_by(username=session['username']).first()
@@ -17,53 +19,53 @@ def inject_profile_pic():
             return {'profile_pic': user.profile_pic}
     return {'profile_pic': None}
 
-@app.route('/upload_profile_pic', methods=['POST'])
+@main.route('/upload_profile_pic', methods=['POST'])
 def upload_profile_pic():
     if 'username' not in session:
-        return redirect(url_for('login'))
+        return redirect(url_for('main.login'))
     if 'profile_pic' not in request.files or request.files['profile_pic'].filename == '':
         flash('No file selected', 'error')
-        return redirect(url_for('profile'))
+        return redirect(url_for('main.profile'))
     file = request.files['profile_pic']
     ext = file.filename.rsplit('.', 1)[-1].lower()
     if ext not in {'png', 'jpg', 'jpeg', 'gif'}:
         flash('Only PNG, JPG and GIF files are allowed', 'error')
-        return redirect(url_for('profile'))
+        return redirect(url_for('main.profile'))
     filename = secure_filename(session['username'] + '.' + ext)
-    upload_dir = os.path.join(app.static_folder, 'images', 'profiles')
+    upload_dir = os.path.join(main.static_folder, 'images', 'profiles')
     os.makedirs(upload_dir, exist_ok=True)
     file.save(os.path.join(upload_dir, filename))
     user = User.query.filter_by(username=session['username']).first()
     user.profile_pic = filename
     db.session.commit()
     flash('Profile picture updated!', 'success')
-    return redirect(url_for('profile'))
+    return redirect(url_for('main.profile'))
 
-@app.route('/')
+@main.route('/')
 def home():
     if 'username' not in session:
         return render_template('landing.html')
     return render_template('home.html', username=session['username'])
 
-@app.route('/friends')
+@main.route('/friends')
 def friends():
     if 'username' not in session:
         flash('Please log in to access this page!', 'error')
-        return redirect(url_for('login'))
+        return redirect(url_for('main.login'))
     return render_template('friends.html', username=session['username'])
 
-@app.route('/profile')
+@main.route('/profile')
 def profile():
     if 'username' not in session:
         flash('Please log in to access this page!', 'error')
-        return redirect(url_for('login'))
+        return redirect(url_for('main.login'))
     
     username = session['username']
     user = User.query.filter_by(username=username).first()
     
     if not user:
         flash('User not found!', 'error')
-        return redirect(url_for('login'))
+        return redirect(url_for('main.login'))
     
     # Calculate real statistics from match data
     user_matches = Match.query.filter(
@@ -125,32 +127,79 @@ def profile():
     user_rankings.sort(key=lambda x: x[1], reverse=True)
     user_rank = next((i+1 for i, (u, _) in enumerate(user_rankings) if u == username), len(user_rankings))
     
+    # Calculate color-specific win rates
+    white_wins = white_losses = white_draws = 0
+    black_wins = black_losses = black_draws = 0
+    
+    for match in user_matches:
+        if match.player_colour.lower() == 'white':
+            if match.result.lower() == 'win':
+                white_wins += 1
+            elif match.result.lower() == 'loss':
+                white_losses += 1
+            else:
+                white_draws += 1
+        else:  # black
+            if match.result.lower() == 'win':
+                black_wins += 1
+            elif match.result.lower() == 'loss':
+                black_losses += 1
+            else:
+                black_draws += 1
+    
+    white_total = white_wins + white_losses + white_draws
+    black_total = black_wins + black_losses + black_draws
+    white_win_rate = round((white_wins / white_total * 100) if white_total > 0 else 0, 1)
+    black_win_rate = round((black_wins / black_total * 100) if black_total > 0 else 0, 1)
+    
+    # Analyze weaknesses based on performance data
+    weaknesses = []
+    if losses > wins * 1.5:
+        weaknesses.append("High loss rate - focus on defensive strategies")
+    if black_win_rate < white_win_rate - 10:
+        weaknesses.append("Struggles playing as black - study black opening strategies")
+    if white_win_rate < black_win_rate - 10:
+        weaknesses.append("Struggles playing as white - improve opening repertoire")
+    if total_games < 10:
+        weaknesses.append("Limited experience - play more games to improve")
+    
+    # Analyze termination patterns
+    timeouts = sum(1 for match in user_matches if match.termination and 'timeout' in match.termination.lower())
+    resignations = sum(1 for match in user_matches if match.termination and 'resign' in match.termination.lower())
+    
+    if timeouts > total_games * 0.3:
+        weaknesses.append("Frequent timeouts - improve time management")
+    if resignations > total_games * 0.4:
+        weaknesses.append("Early resignations - develop endgame skills")
+    
+    weaknesses_text = "; ".join(weaknesses) if weaknesses else "Keep practicing to identify areas for improvement!"
+    
     user_stats = {
         'wins': wins,
         'losses': losses,
         'draws': draws,
         'win_rate': win_rate,
-        'white_win_rate': win_rate,  # Simplified - would need to track piece colours
-        'black_win_rate': win_rate,  # Simplified - would need to track piece colours
+        'white_win_rate': white_win_rate,
+        'black_win_rate': black_win_rate,
         'ranking': f'#{user_rank}',
         'recent_matches': recent_matches,
-        'weaknesses': 'Takes too long to decide next move.'  # Would need AI analysis
+        'weaknesses': weaknesses_text
     }
     
     return render_template('profile.html', user=user, stats=user_stats, username=username)
 
-@app.route('/viewstats')
+@main.route('/viewstats')
 def viewstats():
     if 'username' not in session:
         flash('Please log in to access this page!', 'error')
-        return redirect(url_for('login'))
+        return redirect(url_for('main.login'))
     return render_template('viewstats.html', username=session['username'])
 
-@app.route('/calendar')
+@main.route('/calendar')
 def calendar():
     if 'username' not in session:
         flash('Please log in to access this page!', 'error')
-        return redirect(url_for('login'))
+        return redirect(url_for('main.login'))
     try:
         # Get all matches with tournament info (show all for now, will filter by user later)
         matches = db.session.query(Match, Tournament).join(Tournament).order_by(Match.date_played).all()
@@ -178,11 +227,11 @@ def calendar():
         # Handle case where tables don't exist or no data
         return render_template('calendar.html', matches=[], events=[], username=session['username'])
 
-@app.route('/login', methods=['GET', 'POST'])
+@main.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        username = request.form['Username']
-        password = request.form['Password']
+        username = request.form['username']
+        password = request.form['password']
         if not username or not password:
             flash('Please enter both username and password!', 'error')
             return render_template('login.html')
@@ -193,7 +242,7 @@ def login():
             if check_password_hash(user.password_hash, password):
                 session['username'] = username
                 flash('Login successful!', 'success')
-                return redirect(url_for('home'))
+                return redirect(url_for('main.home'))
             else:
                 #The username was valid but password incorrect
                 flash('Invalid username or password!', 'error')
@@ -205,18 +254,18 @@ def login():
             if user and check_password_hash(user.password_hash, password):
                 session['username'] = user.username
                 flash('Login successful!', 'success')
-                return redirect(url_for('home'))
+                return redirect(url_for('main.home'))
             else:
                 #Either password was incorrect or email not to valid user
                 flash('Invalid username or password!', 'error')
     
     return render_template('login.html')
 
-@app.route('/new_record', methods=['GET', 'POST'])
+@main.route('/new_record', methods=['GET', 'POST'])
 def new_record():
     if 'username' not in session:
         flash('Please log in to access this page!', 'error')
-        return redirect(url_for('login'))
+        return redirect(url_for('main.login'))
     if request.method == 'POST':
         try:
             opponent = request.form['opponent']
@@ -244,15 +293,15 @@ def new_record():
         db.session.add(record)
         db.session.commit()
         flash('Game recorded successfully!', 'success')
-        return redirect(url_for('viewstats'))
+        return redirect(url_for('main.viewstats'))
 
     return render_template('new_record.html')
 
-@app.route('/query', methods=['GET', 'POST'])
+@main.route('/query', methods=['GET', 'POST'])
 def query():
     if 'username' not in session:
         flash('Please log in to access this page!', 'error')
-        return redirect(url_for('login'))
+        return redirect(url_for('main.login'))
     
     if request.method == 'POST':
         issue_type = request.form['issue_type']
@@ -264,11 +313,11 @@ def query():
         # TODO: Store issue in database or send email
         # For now, just show success message
         flash(f'Issue "{title}" has been submitted successfully! We will review it and get back to you soon.', 'success')
-        return redirect(url_for('query'))
+        return redirect(url_for('main.query'))
 
     return render_template('query.html', username=session['username'])
 
-@app.route('/faq', methods=['GET', 'POST'])
+@main.route('/faq', methods=['GET', 'POST'])
 def faq():
     if request.method == 'POST':
         name = request.form['name']
@@ -276,15 +325,15 @@ def faq():
         query = request.form['query']
         # TODO: Store query in database or send email
         flash('Your query has been submitted successfully! We will get back to you soon.', 'success')
-        return redirect(url_for('faq'))
+        return redirect(url_for('main.faq'))
 
     return render_template('faq.html')
 
-@app.route('/leaderboard')
+@main.route('/leaderboard')
 def leaderboard():
     if 'username' not in session:
         flash('Please log in to access this page!', 'error')
-        return redirect(url_for('login'))
+        return redirect(url_for('main.login'))
 
     all_users = User.query.all()
     players = []
@@ -314,13 +363,13 @@ def leaderboard():
     players.sort(key=lambda x: (x['wins'], x['win_rate']), reverse=True)
     return render_template('leaderboard.html', players=players, username=session['username'])
 
-@app.route('/logout')
+@main.route('/logout')
 def logout():
     session.pop('username', None)
     flash('You have been logged out!', 'success')
-    return redirect(url_for('home'))
+    return redirect(url_for('main.home'))
 
-@app.route('/signup', methods=['GET', 'POST'])
+@main.route('/signup', methods=['GET', 'POST'])
 def signup():
     if request.method == 'POST':
         username = request.form['username']
@@ -349,11 +398,11 @@ def signup():
         db.session.add(new_user)
         db.session.commit()
         flash('Account created successfully! Please log in.', 'success')
-        return redirect(url_for('login'))
+        return redirect(url_for('main.login'))
     
     return render_template('signup.html')
 
-@app.route('/forgotpassword', methods=['GET', 'POST'])
+@main.route('/forgotpassword', methods=['GET', 'POST'])
 def forgotpassword():
     if 'resetstep' not in session:
         session['resetstep'] = 1
@@ -411,7 +460,7 @@ def forgotpassword():
                         flash('Your password has been reset successfully! Please log in with your new password.', 'success')
                         session.pop('resetcode', None)
                         session['resetstep'] = 1
-                        return redirect(url_for('login'))
+                        return redirect(url_for('main.login'))
                     else:
                         flash('An error occurred while resetting your password. Please try again.', 'error')
                         session['resetstep'] = 1
