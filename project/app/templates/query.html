@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Submit Issue - Chessmate{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+  <div class="row justify-content-center">
+    <div class="col-md-8">
+      <div class="header text-center mb-4">
+        <h2>Submit an Issue</h2>
+        <p>Report bugs, suggest features, or ask questions about Chessmate</p>
+      </div>
+
+      <div class="card card-ui">
+        <div class="card-body">
+          <form method="POST">
+            <div class="mb-3">
+              <label for="issue_type" class="form-label">Issue Type</label>
+              <select class="form-select" id="issue_type" name="issue_type" required>
+                <option value="">Select issue type...</option>
+                <option value="bug">Bug Report</option>
+                <option value="feature">Feature Request</option>
+                <option value="question">Question</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+
+            <div class="mb-3">
+              <label for="title" class="form-label">Title</label>
+              <input type="text" class="form-control" id="title" name="title" placeholder="Brief description of the issue" required>
+            </div>
+
+            <div class="mb-3">
+              <label for="description" class="form-label">Description</label>
+              <textarea class="form-control" id="description" name="description" rows="6" placeholder="Provide detailed information about the issue" required></textarea>
+            </div>
+
+            <div class="mb-3">
+              <label for="priority" class="form-label">Priority</label>
+              <select class="form-select" id="priority" name="priority" required>
+                <option value="">Select priority...</option>
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+                <option value="urgent">Urgent</option>
+              </select>
+            </div>
+
+            <div class="mb-3">
+              <label for="email" class="form-label">Email (optional)</label>
+              <input type="email" class="form-control" id="email" name="email" placeholder="your.email@example.com">
+              <div class="form-text">We'll contact you at this email if we need more information</div>
+            </div>
+
+            <div class="d-grid">
+              <button type="submit" class="btn btn-danger">Submit Issue</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="text-center mt-3">
+        <a href="{{ url_for('home') }}" class="btn btn-outline-secondary">Back to Home</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
