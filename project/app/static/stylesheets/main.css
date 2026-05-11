@@ -138,3 +138,22 @@ body {
 .logo{
     width: 200px;
 }
+
+.footer{
+    background-color: #343a40;
+    padding: 20px 0 20px;
+}
+
+.footer-desc{
+    color: white;
+}
+
+.footer-buttons{
+    color: white;
+    text-decoration-line: none;
+    margin-right: 15px;
+}
+
+.footer-buttons:hover{
+    text-decoration-line: underline;
+}

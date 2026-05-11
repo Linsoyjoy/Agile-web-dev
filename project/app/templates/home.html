@@ -5,30 +5,55 @@
 <div class="container mt-5">
   <div class="hero">
     <h1>Welcome back, {{ username }}!</h1>
-    <h4>Track your chess games, analyze your performance, and improve your skills.</h4><br>
+    <h4>Track your chess games, analyze your performance, and improve your skills.</h4>
   </div>
-  <div class="row mt-4">
+  
+  <div class="row mt-4" style="margin-bottom: 40px;">
+    <!--features-->
     <div class="col-md-4">
       <div class="card feature-card p-3 text-center">
         <h5>Game Tracking</h5>
         <p>Log and review all your matches in one place.</p>
         <a href="{{url_for('main.new_record')}}" class="btn btn-secondary btn-lg btn-block">Add new record</a>
       </div>
-    </div>
-    <div class="col-md-4">
-      <div class="card feature-card p-3 text-center">
+      <div class="card feature-card p-3 text-center mt-4">
         <h5>Performance Stats</h5>
         <p>Find the most important areas to improve.</p>
         <a href="{{url_for('main.viewstats')}}" class="btn btn-secondary btn-lg btn-block">View statistics</a>
       </div>
-    </div>
-    <div class="col-md-4">
-      <div class="card feature-card p-3 text-center">
+      <div class="card feature-card p-3 text-center mt-4">
         <h5>Opponent Matching</h5>
         <p>Find other players of similar skill levels.</p>
         <a href="{{url_for('main.friends')}}" class="btn btn-secondary btn-lg btn-block">Find players</a>
       </div>
     </div>
+    <!--Recent matches-->
+    <div class = "col">
+      <div class="card p-3">
+        <h1>Latest match</h1>
+        <p>Some statistics here</p>
+      </div>
+    </div>
   </div>
 </div>
+<!--footer-->
+  <div class="footer">
+    <div class="container">
+      <div class="row align-items-center mt-3">
+        <!--Short description-->
+        <div class="col-md-1">
+          <img src="{{url_for('static',filename='images/icon.png')}}" alt="chessmate icon" style="width: 100px;">
+        </div>
+        <div class="col-md-5 text-md-start">
+          <h2 class="footer-desc">About Chessmate</h2>
+          <p class="footer-desc">Chessmate was made as part of the 2026 CITS3401 group project.</p>
+        </div>
+        <!--Random buttons-->
+        <div class="col-md-6 text-md-end">
+          <a href="{{url_for('main.faq')}}" class="footer-buttons">FAQs</a>
+          <a href="{{url_for('main.query')}}" class="footer-buttons">Report issue</a>
+        </div>
+      </div>
+    </div>
+  </div>
 {% endblock %}
