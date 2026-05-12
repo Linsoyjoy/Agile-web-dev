@@ -8,8 +8,7 @@ from app import db
 from .blueprints import main
 from .models import User, Tournament, Match
 from .forgot_password import reset_password_email
-from datetime import date
-import datetime
+from datetime import date, datetime
 
 @main.context_processor
 def inject_profile_pic():
@@ -143,7 +142,7 @@ def profile():
     
     # Sort recent matches by date (most recent first) and take last 3
     recent_matches = sorted(recent_matches, 
-                          key=lambda x: next((m.date_played for m in user_matches), datetime.datetime.min), 
+                          key=lambda x: next((m.date_played for m in user_matches), datetime.min),
                           reverse=True)[:3]
     
     total_games = wins + losses + draws
@@ -235,7 +234,55 @@ def viewstats():
     if 'username' not in session:
         flash('Please log in to access this page!', 'error')
         return redirect(url_for('main.login'))
-    return render_template('viewstats.html', username=session['username'])
+
+    username = session['username']
+    user = User.query.filter_by(username=username).first()
+
+    user_matches = Match.query.filter(
+        (Match.player == username) | (Match.opponent == username)
+    ).all()
+
+    wins = losses = draws = 0
+    for m in user_matches:
+        r = (m.result or '').lower()
+        if m.player == username:
+            if r == 'win': wins += 1
+            elif r == 'loss': losses += 1
+            elif r == 'draw': draws += 1
+        else:
+            if r == 'loss': wins += 1
+            elif r == 'win': losses += 1
+            elif r == 'draw': draws += 1
+
+    total = wins + losses + draws
+    win_rate = round((wins / total * 100) if total > 0 else 0, 1)
+
+    # Compute simple ranking based on wins across all users
+    all_users = User.query.all()
+    rankings = []
+    for u in all_users:
+        u_matches = Match.query.filter(
+            (Match.player == u.username) | (Match.opponent == u.username)
+        ).all()
+        u_wins = 0
+        for m in u_matches:
+            r = (m.result or '').lower()
+            if m.player == u.username and r == 'win':
+                u_wins += 1
+            elif m.opponent == u.username and r == 'loss':
+                u_wins += 1
+        rankings.append((u.username, u_wins))
+    rankings.sort(key=lambda x: x[1], reverse=True)
+    user_rank = next((i + 1 for i, (u, _) in enumerate(rankings) if u == username), len(rankings) or 1)
+
+    stats = {
+        'wins': wins,
+        'losses': losses,
+        'draws': draws,
+        'win_rate': win_rate,
+        'ranking': f'#{user_rank}',
+    }
+    return render_template('viewstats.html', username=username, user=user, stats=stats)
 
 @main.route('/calendar')
 def calendar():
@@ -243,36 +290,48 @@ def calendar():
         flash('Please log in to access this page!', 'error')
         return redirect(url_for('main.login'))
     try:
-        # Get all matches (both with and without tournaments)
-        all_matches = Match.query.order_by(Match.date_played.desc()).all()
-        
-        # Format events for FullCalendar
+        username = session['username']
+        # Only show the current user's matches in the calendar
+        all_matches = Match.query.filter(
+            (Match.player == username) | (Match.opponent == username)
+        ).order_by(Match.date_played.desc()).all()
+
+        # Build display list with tournament info for the sidebar
+        match_entries = []
         events = []
         for match in all_matches:
+            result_lower = (match.result or '').lower()
             event_colour = '#6c757d'  # default gray for draw
-            if match.result.lower() == 'pending':
-                event_colour = '#ffc107'  # yellow for pending
-            elif match.result.lower() == 'win':
+            if result_lower == 'pending':
+                event_colour = '#ffc107'  # yellow for pending/upcoming
+            elif result_lower == 'win':
                 event_colour = '#28a745'  # green for win
-            elif match.result.lower() == 'loss':
+            elif result_lower == 'loss':
                 event_colour = '#dc3545'  # red for loss
-            
-            # Get tournament name if available
+
+            tournament = None
             tournament_name = ""
             if match.tournament_id:
                 tournament = Tournament.query.get(match.tournament_id)
                 if tournament:
                     tournament_name = f" - {tournament.name}"
-            
+
+            match_entries.append((match, tournament))
+
             events.append({
                 'title': f"{match.player} vs {match.opponent}{tournament_name}",
                 'start': match.date_played.isoformat(),
-                'backgroundcolour': event_colour,
-                'bordercolour': event_colour
+                'backgroundColor': event_colour,
+                'borderColor': event_colour,
+                'extendedProps': {
+                    'status': 'Upcoming' if result_lower == 'pending' else 'Completed',
+                    'result': (match.result or '').capitalize() or 'Unknown',
+                    'colour': (match.player_colour or '').capitalize()
+                }
             })
-        
-        return render_template('calendar.html', matches=all_matches, events=events, username=session['username'])
-    except Exception as e:
+
+        return render_template('calendar.html', matches=match_entries, events=events, username=username)
+    except Exception:
         # Handle case where tables don't exist or no data
         return render_template('calendar.html', matches=[], events=[], username=session['username'])
 

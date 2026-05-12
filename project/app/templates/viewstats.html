@@ -4,8 +4,8 @@
 {% block content %}
 <div class="container mt-5">
   <div class="profile-header">
-    <h2>John Doe</h2>
-    <p class="mb-0">Ranking: <strong>#3</strong></p>
+    <h2>{{ user.username if user else username }}</h2>
+    <p class="mb-0">Ranking: <strong>{{ stats.ranking }}</strong></p>
   </div>
 
   <h3 class="mt-5 mb-4">Statistics</h3>
@@ -35,25 +35,25 @@
     <div class="col-md-3">
       <div class="card stat-card p-3 text-center">
         <h5>Wins</h5>
-        <h3 class="text-success">25</h3>
+        <h3 class="text-success">{{ stats.wins }}</h3>
       </div>
     </div>
     <div class="col-md-3">
       <div class="card stat-card p-3 text-center">
         <h5>Losses</h5>
-        <h3 class="text-danger">10</h3>
+        <h3 class="text-danger">{{ stats.losses }}</h3>
       </div>
     </div>
     <div class="col-md-3">
       <div class="card stat-card p-3 text-center">
         <h5>Draws</h5>
-        <h3>5</h3>
+        <h3>{{ stats.draws }}</h3>
       </div>
     </div>
     <div class="col-md-3">
       <div class="card stat-card p-3 text-center">
         <h5>Win Rate</h5>
-        <h3>62%</h3>
+        <h3>{{ stats.win_rate }}%</h3>
       </div>
     </div>
   </div>
