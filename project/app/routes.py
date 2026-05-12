@@ -45,7 +45,49 @@ def upload_profile_pic():
 def home():
     if 'username' not in session:
         return render_template('landing.html')
-    return render_template('home.html', username=session['username'])
+    
+    username = session['username']
+    
+    # Get user's latest match
+    latest_match = Match.query.filter(
+        (Match.player == username) | (Match.opponent == username)
+    ).order_by(Match.date_played.desc()).first()
+    
+    # Get user's overall stats
+    user_matches = Match.query.filter(
+        (Match.player == username) | (Match.opponent == username)
+    ).all()
+    
+    wins = losses = draws = 0
+    for match in user_matches:
+        if match.player == username:
+            if match.result.lower() == 'win':
+                wins += 1
+            elif match.result.lower() == 'loss':
+                losses += 1
+            else:
+                draws += 1
+        else:
+            if match.result.lower() == 'loss':
+                wins += 1
+            elif match.result.lower() == 'win':
+                losses += 1
+            else:
+                draws += 1
+    
+    total_games = wins + losses + draws
+    win_rate = round((wins / total_games * 100) if total_games > 0 else 0, 1)
+    
+    # Get recent activity (last 5 matches)
+    recent_matches = Match.query.filter(
+        (Match.player == username) | (Match.opponent == username)
+    ).order_by(Match.date_played.desc()).limit(5).all()
+    
+    return render_template('home.html', 
+                         username=username, 
+                         latest_match=latest_match,
+                         stats={'wins': wins, 'losses': losses, 'draws': draws, 'win_rate': win_rate},
+                         recent_matches=recent_matches)
 
 @main.route('/friends')
 def friends():
@@ -201,28 +243,35 @@ def calendar():
         flash('Please log in to access this page!', 'error')
         return redirect(url_for('main.login'))
     try:
-        # Get all matches with tournament info (show all for now, will filter by user later)
-        matches = db.session.query(Match, Tournament).join(Tournament).order_by(Match.date_played).all()
+        # Get all matches (both with and without tournaments)
+        all_matches = Match.query.order_by(Match.date_played.desc()).all()
         
         # Format events for FullCalendar
         events = []
-        for match, tournament in matches:
+        for match in all_matches:
             event_colour = '#6c757d'  # default gray for draw
-            if match.result == 'pending':
+            if match.result.lower() == 'pending':
                 event_colour = '#ffc107'  # yellow for pending
-            elif match.result == 'win':
+            elif match.result.lower() == 'win':
                 event_colour = '#28a745'  # green for win
-            elif match.result == 'loss':
+            elif match.result.lower() == 'loss':
                 event_colour = '#dc3545'  # red for loss
-                
+            
+            # Get tournament name if available
+            tournament_name = ""
+            if match.tournament_id:
+                tournament = Tournament.query.get(match.tournament_id)
+                if tournament:
+                    tournament_name = f" - {tournament.name}"
+            
             events.append({
-                'title': f"{match.player} vs {match.opponent} - {tournament.name}",
+                'title': f"{match.player} vs {match.opponent}{tournament_name}",
                 'start': match.date_played.isoformat(),
                 'backgroundcolour': event_colour,
                 'bordercolour': event_colour
             })
         
-        return render_template('calendar.html', matches=matches, events=events, username=session['username'])
+        return render_template('calendar.html', matches=all_matches, events=events, username=session['username'])
     except Exception as e:
         # Handle case where tables don't exist or no data
         return render_template('calendar.html', matches=[], events=[], username=session['username'])
