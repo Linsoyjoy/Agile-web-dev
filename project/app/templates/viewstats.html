@@ -5,7 +5,8 @@
 <div class="container mt-5">
   <div class="profile-header">
     <h2>{{ user.username if user else username }}</h2>
-    <p class="mb-0">Ranking: <strong>{{ stats.ranking }}</strong></p>
+    <p class="mb-0">Ranking: <strong>{{stats.ranking }}</strong></p>
+    <p class="mb-0">ELO: <strong>{{stats.ELO}}</strong></p>
   </div>
 
   <div class="row mt-4">

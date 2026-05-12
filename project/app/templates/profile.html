@@ -35,42 +35,6 @@
   </div>
 
   <div class="row mt-4">
-    <div class="col-md-3">
-      <div class="card stat-card p-3 text-center">
-        <h5>Wins</h5>
-        <h3>{{ stats.wins }}</h3>
-      </div>
-    </div>
-    <div class="col-md-3">
-      <div class="card stat-card p-3 text-center">
-        <h5>Losses</h5>
-        <h3>{{ stats.losses }}</h3>
-      </div>
-    </div>
-    <div class="col-md-3">
-      <div class="card stat-card p-3 text-center">
-        <h5>Draws</h5>
-        <h3>{{ stats.draws }}</h3>
-      </div>
-    </div>
-    <div class="col-md-3">
-      <div class="card stat-card p-3 text-center">
-        <h5>Win Rate</h5>
-        <h3>{{ stats.win_rate }}%</h3>
-      </div>
-    </div>
-  </div>
-
-  <div class="row mt-4">
-    <div class="col-md-6">
-      <div class="card p-3">
-        <h5>Performance by Colour</h5>
-        <ul class="list-group">
-          <li class="list-group-item">White: {{ stats.white_win_rate }}% Win Rate</li>
-          <li class="list-group-item">Black: {{ stats.black_win_rate }}% Win Rate</li>
-        </ul>
-      </div>
-    </div>
     <div class="col-md-6">
       <div class="card p-3">
         <h5>Recent Matches</h5>
@@ -78,6 +42,15 @@
           {% for match in stats.recent_matches %}
           <li class="list-group-item">{{ match.result }} vs {{ match.opponent }}</li>
           {% endfor %}
+        </ul>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card p-3">
+        <h5>Performance by Colour</h5>
+        <ul class="list-group">
+          <li class="list-group-item">White: {{ stats.white_win_rate }}% Win Rate</li>
+          <li class="list-group-item">Black: {{ stats.black_win_rate }}% Win Rate</li>
         </ul>
       </div>
     </div>
