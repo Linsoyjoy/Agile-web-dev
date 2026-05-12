@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends ".header.html" %}
 {% block title %}Profile - Chessmate{% endblock %}
 
 {% block content %}
@@ -30,7 +30,7 @@
       <h2>{{ user.username }}</h2>
       <p class="mb-1 text-muted">{{ user.email }}</p>
       <p>Ranking: <strong>{{ stats.ranking }}</strong></p>
-      <button class="btn btn-primary btn-custom" onclick="addFriend()">Add Friend</button>
+      <!-- <button class="btn btn-primary btn-custom" onclick="addFriend()">Add Friend</button> -->
       <button class="btn btn-success btn-custom" onclick="shareProfile()">Share Profile</button>
     </div>
   </div>
@@ -96,6 +96,7 @@
   </div>
 
 </div>
+{% include '.footer.html' %}
 {% endblock %}
 
 {% block scripts %}
