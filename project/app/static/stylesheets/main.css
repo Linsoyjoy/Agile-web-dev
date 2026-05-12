@@ -157,3 +157,67 @@ body {
 .footer-buttons:hover{
     text-decoration-line: underline;
 }
+
+/* Upcoming matches horizontal scroll */
+.upcoming-matches-scroll {
+    display: flex;
+    overflow-x: auto;
+    gap: 0;
+    padding: 10px 0;
+    scrollbar-width: thin;
+    scrollbar-color: #6c757d #f8f9fa;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+/* Ensure the upcoming matches card doesn't expand */
+.upcoming-matches-scroll .card {
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+}
+
+.upcoming-matches-scroll::-webkit-scrollbar {
+    height: 8px;
+}
+
+.upcoming-matches-scroll::-webkit-scrollbar-track {
+    background: #f8f9fa;
+    border-radius: 4px;
+}
+
+.upcoming-matches-scroll::-webkit-scrollbar-thumb {
+    background: #6c757d;
+    border-radius: 4px;
+}
+
+.upcoming-matches-scroll::-webkit-scrollbar-thumb:hover {
+    background: #5a6268;
+}
+
+/* Recent activity vertical scroll */
+.recent-activity-scroll {
+    max-height: 240px; /* Show approximately 3 activity items */
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #6c757d #f8f9fa;
+}
+
+.recent-activity-scroll::-webkit-scrollbar {
+    width: 8px;
+}
+
+.recent-activity-scroll::-webkit-scrollbar-track {
+    background: #f8f9fa;
+    border-radius: 4px;
+}
+
+.recent-activity-scroll::-webkit-scrollbar-thumb {
+    background: #6c757d;
+    border-radius: 4px;
+}
+
+.recent-activity-scroll::-webkit-scrollbar-thumb:hover {
+    background: #5a6268;
+}

@@ -47,10 +47,16 @@ def home():
     
     username = session['username']
     
-    # Get user's latest match
+    # Get user's latest match (could be completed or upcoming)
     latest_match = Match.query.filter(
         (Match.player == username) | (Match.opponent == username)
     ).order_by(Match.date_played.desc()).first()
+    
+    # Get all upcoming matches in date order
+    upcoming_matches = Match.query.filter(
+        (Match.player == username) | (Match.opponent == username),
+        Match.result == 'pending'
+    ).order_by(Match.date_played.asc()).all()
     
     # Get user's overall stats
     user_matches = Match.query.filter(
@@ -59,32 +65,41 @@ def home():
     
     wins = losses = draws = 0
     for match in user_matches:
+        r = (match.result or '').lower()
         if match.player == username:
-            if match.result.lower() == 'win':
+            if r == 'win':
                 wins += 1
-            elif match.result.lower() == 'loss':
+            elif r == 'loss':
                 losses += 1
-            else:
+            elif r == 'draw':
                 draws += 1
+            elif r == 'pending':
+                # Skip upcoming matches from stats calculation
+                continue
         else:
-            if match.result.lower() == 'loss':
+            if r == 'loss':
                 wins += 1
-            elif match.result.lower() == 'win':
+            elif r == 'win':
                 losses += 1
-            else:
+            elif r == 'draw':
                 draws += 1
+            elif r == 'pending':
+                # Skip upcoming matches from stats calculation
+                continue
     
     total_games = wins + losses + draws
     win_rate = round((wins / total_games * 100) if total_games > 0 else 0, 1)
     
-    # Get recent activity (last 5 matches)
+    # Get recent activity (last 5 completed matches)
     recent_matches = Match.query.filter(
-        (Match.player == username) | (Match.opponent == username)
+        (Match.player == username) | (Match.opponent == username),
+        Match.result != 'pending'
     ).order_by(Match.date_played.desc()).limit(5).all()
     
     return render_template('home.html', 
                          username=username, 
                          latest_match=latest_match,
+                         upcoming_matches=upcoming_matches,
                          stats={'wins': wins, 'losses': losses, 'draws': draws, 'win_rate': win_rate},
                          recent_matches=recent_matches)
 
@@ -110,7 +125,7 @@ def profile():
     
     # Calculate real statistics from match data
     user_matches = Match.query.filter(
-        (Match.player == username)
+        (Match.player == username) | (Match.opponent == username)
     ).all()
     
     wins = 0
@@ -120,29 +135,50 @@ def profile():
     
     for match in user_matches:
         # Determine if user is player1 or player2 and get result
-        if match.result == 'Win':
-            wins += 1
-            opponent = match.opponent
-        elif match.result == 'Loss':
-            losses += 1
-            opponent = match.opponent
-        else:  # draw
-            draws += 1
-            opponent = match.opponent
+        r = (match.result or '').lower()
+        if match.player == username:
+            if r == 'win':
+                wins += 1
+                opponent = match.opponent
+                user_result = 'Win'
+            elif r == 'loss':
+                losses += 1
+                opponent = match.opponent
+                user_result = 'Loss'
+            elif r == 'draw':
+                draws += 1
+                opponent = match.opponent
+                user_result = 'Draw'
+            elif r == 'pending':
+                # Skip upcoming matches from stats calculation
+                continue
+        else:
+            if r == 'loss':
+                wins += 1
+                opponent = match.player
+                user_result = 'Win'
+            elif r == 'win':
+                losses += 1
+                opponent = match.player
+                user_result = 'Loss'
+            elif r == 'draw':
+                draws += 1
+                opponent = match.player
+                user_result = 'Draw'
+            elif r == 'pending':
+                # Skip upcoming matches from stats calculation
+                continue
         
-        # Add to recent matches (convert result to user's perspective)
-        user_result = 'Win' if match.opponent == username and match.result == 'Loss' else \
-                     'Loss' if match.opponent == username and match.result == 'Win' else \
-                     match.result.capitalize()
-        
+        # Add to recent matches
         recent_matches.append({
             'opponent': opponent,
-            'result': user_result
+            'result': user_result,
+            'date': match.date_played
         })
     
     # Sort recent matches by date (most recent first) and take last 3
     recent_matches = sorted(recent_matches, 
-                          key=lambda x: next((m.date_played for m in user_matches), datetime.min),
+                          key=lambda x: x['date'],
                           reverse=True)[:3]
     
     total_games = wins + losses + draws
@@ -401,7 +437,7 @@ def new_record():
             
             # For upcoming matches, set default values
             if match_type == 'upcoming':
-                termination = 'scheduled'
+                termination = 'upcoming'
                 game_record = ''
             
             date_created = datetime.now()
