@@ -29,7 +29,6 @@
     <div>
       <h2>{{ user.username }}</h2>
       <p class="mb-1 text-muted">{{ user.email }}</p>
-      <p>Ranking: <strong>{{ stats.ranking }}</strong></p>
       <!-- <button class="btn btn-primary btn-custom" onclick="addFriend()">Add Friend</button> -->
       <button class="btn btn-success btn-custom" onclick="shareProfile()">Share Profile</button>
     </div>
@@ -87,12 +86,6 @@
   <div class="card mt-4 p-3">
     <h5>Identified Weaknesses</h5>
     <p>{{ stats.weaknesses }}</p>
-  </div>
-
-  <div class="mt-4 mb-5">
-    <button class="btn btn-warning">View Full Stats</button>
-    <button class="btn btn-secondary">Find Similar Opponents</button>
-    <button class="btn btn-danger">Report Issue</button>
   </div>
 
 </div>
