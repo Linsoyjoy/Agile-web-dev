@@ -317,17 +317,52 @@ def new_record():
         return redirect(url_for('main.login'))
     if request.method == 'POST':
         try:
-            opponent = request.form['opponent']
-            result = request.form['result']
-            colour = request.form['colour']
-            termination = request.form['termination']
-            date_played = date.fromisoformat(request.form['date_played'])
-            game_record = request.form.get('game_record', '')
-            date_created = date.today()
-        except Exception as e:
-            flash('Please fill in all required fields correctly!', 'error')
+            # Get form data with proper error handling
+            match_type = request.form.get('match_type', 'past')
+            opponent = request.form.get('opponent', '').strip()
+            result = request.form.get('result', '').strip()
+            colour = request.form.get('colour', '').strip()
+            date_played_str = request.form.get('date_played', '').strip()
+            
+            # Validate required fields
+            if not opponent or not result or not colour or not date_played_str:
+                flash('Please fill in all required fields!', 'error')
+                return render_template('new_record.html')
+            
+            # Parse date
+            date_played = datetime.strptime(date_played_str, '%Y-%m-%d').date()
+            
+            # Handle optional fields based on match type
+            game_record = request.form.get('game_record', '').strip()
+            termination = request.form.get('termination', '').strip()
+            time_played = request.form.get('time_played', '').strip()
+            location = request.form.get('location', '').strip()
+            notes = request.form.get('notes', '').strip()
+            opening = request.form.get('opening', '').strip()
+            
+            # For upcoming matches, set default values
+            if match_type == 'upcoming':
+                termination = 'scheduled'
+                game_record = ''
+            
+            date_created = datetime.now()
+            
+            # Combine date and time if time is provided
+            if time_played:
+                try:
+                    time_obj = datetime.strptime(time_played, '%H:%M').time()
+                    date_played = datetime.combine(date_played, time_obj)
+                except ValueError:
+                    date_played = datetime.combine(date_played, datetime.min.time())
+            else:
+                date_played = datetime.combine(date_played, datetime.min.time())
+            
+        except ValueError as e:
+            flash(f'Invalid date format: {str(e)}', 'error')
             return render_template('new_record.html')
-
+        except Exception as e:
+            flash(f'Error processing form: {str(e)}', 'error')
+            return render_template('new_record.html')
 
         record = Match(
             moves=game_record,
@@ -341,8 +376,12 @@ def new_record():
         )
         db.session.add(record)
         db.session.commit()
-        flash('Game recorded successfully!', 'success')
-        return redirect(url_for('main.viewstats'))
+        
+        if match_type == 'upcoming':
+            flash('Match scheduled successfully!', 'success')
+        else:
+            flash('Game recorded successfully!', 'success')
+        return redirect(url_for('main.home'))
 
     return render_template('new_record.html')
 
