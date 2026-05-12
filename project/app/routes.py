@@ -194,10 +194,10 @@ def profile():
         u_wins = 0
         for m in u_matches:
             if m.player == u.username:
-                if m.result == 'win':
+                if (m.result or '').lower() == 'win':
                     u_wins += 1
             else:
-                if m.result == 'loss':
+                if (m.result or '').lower() == 'loss':
                     u_wins += 1
         user_rankings.append((u.username, u_wins))
     
@@ -526,13 +526,14 @@ def leaderboard():
         ).all()
         wins = losses = draws = 0
         for m in matches:
+            r = (m.result or '').lower()
             if m.player == u.username:
-                if m.result == 'win': wins += 1
-                elif m.result == 'loss': losses += 1
+                if r == 'win': wins += 1
+                elif r == 'loss': losses += 1
                 else: draws += 1
             else:
-                if m.result == 'loss': wins += 1
-                elif m.result == 'win': losses += 1
+                if r == 'loss': wins += 1
+                elif r == 'win': losses += 1
                 else: draws += 1
         total = wins + losses + draws
         players.append({
