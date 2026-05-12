@@ -5,30 +5,8 @@
 <div class="container mt-5">
   <div class="profile-header">
     <h2>{{ user.username if user else username }}</h2>
-    <p class="mb-0">Ranking: <strong>{{ stats.ranking }}</strong></p>
-  </div>
-
-  <h3 class="mt-5 mb-4">Statistics</h3>
-
-  <div class="row">
-    <div class="col-lg-6 mb-4">
-      <div class="card stat-card p-4">
-        <h5>Last 30 Days ELO</h5>
-        <div class="graph-placeholder mt-3">
-          📈 Last 30 Days ELO Graph<br>
-          <small>(Line chart will go here)</small>
-        </div>
-      </div>
-    </div>
-    <div class="col-lg-6 mb-4">
-      <div class="card stat-card p-4">
-        <h5>All Time ELO</h5>
-        <div class="graph-placeholder mt-3">
-          📈 All Time ELO Graph<br>
-          <small>(Line chart will go here)</small>
-        </div>
-      </div>
-    </div>
+    <p class="mb-0">Ranking: <strong>{{stats.ranking }}</strong></p>
+    <p class="mb-0">ELO: <strong>{{stats.ELO}}</strong></p>
   </div>
 
   <div class="row mt-4">
@@ -58,6 +36,27 @@
     </div>
   </div>
 
+  <div class="row mt-4">
+    <div class="col-lg-6 mb-4">
+      <div class="card stat-card p-4">
+        <h5>Last 30 Days ELO</h5>
+        <div class="graph-placeholder mt-3">
+          📈 Last 30 Days ELO Graph<br>
+          <small>(Line chart will go here)</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-6 mb-4">
+      <div class="card stat-card p-4">
+        <h5>All Time ELO</h5>
+        <div class="graph-placeholder mt-3">
+          📈 All Time ELO Graph<br>
+          <small>(Line chart will go here)</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="card stat-card mt-5 p-4">
     <h5 class="mb-4">Advanced Metrics</h5>
     <div class="d-flex flex-wrap gap-3">
@@ -71,11 +70,10 @@
     <small class="text-muted mt-3 d-block">These buttons are not clickable yet</small>
   </div>
 
-  <div class="mt-5 mb-5">
+  <!-- <div class="mt-5 mb-5">
     <button class="btn btn-warning btn-custom">View Full Detailed Stats</button>
     <button class="btn btn-secondary btn-custom">Export Stats</button>
-    <button class="btn btn-danger btn-custom">Report Issue</button>
-  </div>
+  </div> -->
 </div>
 {% include '.footer.html' %}
 {% endblock %}

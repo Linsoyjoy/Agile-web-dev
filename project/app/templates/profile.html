@@ -29,49 +29,12 @@
     <div>
       <h2>{{ user.username }}</h2>
       <p class="mb-1 text-muted">{{ user.email }}</p>
-      <p>Ranking: <strong>{{ stats.ranking }}</strong></p>
       <!-- <button class="btn btn-primary btn-custom" onclick="addFriend()">Add Friend</button> -->
       <button class="btn btn-success btn-custom" onclick="shareProfile()">Share Profile</button>
     </div>
   </div>
 
   <div class="row mt-4">
-    <div class="col-md-3">
-      <div class="card stat-card p-3 text-center">
-        <h5>Wins</h5>
-        <h3>{{ stats.wins }}</h3>
-      </div>
-    </div>
-    <div class="col-md-3">
-      <div class="card stat-card p-3 text-center">
-        <h5>Losses</h5>
-        <h3>{{ stats.losses }}</h3>
-      </div>
-    </div>
-    <div class="col-md-3">
-      <div class="card stat-card p-3 text-center">
-        <h5>Draws</h5>
-        <h3>{{ stats.draws }}</h3>
-      </div>
-    </div>
-    <div class="col-md-3">
-      <div class="card stat-card p-3 text-center">
-        <h5>Win Rate</h5>
-        <h3>{{ stats.win_rate }}%</h3>
-      </div>
-    </div>
-  </div>
-
-  <div class="row mt-4">
-    <div class="col-md-6">
-      <div class="card p-3">
-        <h5>Performance by Colour</h5>
-        <ul class="list-group">
-          <li class="list-group-item">White: {{ stats.white_win_rate }}% Win Rate</li>
-          <li class="list-group-item">Black: {{ stats.black_win_rate }}% Win Rate</li>
-        </ul>
-      </div>
-    </div>
     <div class="col-md-6">
       <div class="card p-3">
         <h5>Recent Matches</h5>
@@ -82,17 +45,20 @@
         </ul>
       </div>
     </div>
+    <div class="col-md-6">
+      <div class="card p-3">
+        <h5>Performance by Colour</h5>
+        <ul class="list-group">
+          <li class="list-group-item">White: {{ stats.white_win_rate }}% Win Rate</li>
+          <li class="list-group-item">Black: {{ stats.black_win_rate }}% Win Rate</li>
+        </ul>
+      </div>
+    </div>
   </div>
 
   <div class="card mt-4 p-3">
     <h5>Identified Weaknesses</h5>
     <p>{{ stats.weaknesses }}</p>
-  </div>
-
-  <div class="mt-4 mb-5">
-    <button class="btn btn-warning">View Full Stats</button>
-    <button class="btn btn-secondary">Find Similar Opponents</button>
-    <button class="btn btn-danger">Report Issue</button>
   </div>
 
 </div>

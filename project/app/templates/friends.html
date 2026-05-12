@@ -6,72 +6,78 @@
 
   <div class="header text-center">
     <h2>Friends</h2>
-    <p>Track friends, compare rankings, and find players at your level</p>
+    <h5>Track friends, compare rankings, and find players at your level</h5>
+    <button class="btn btn-secondary btn-lg">Add friend</button><br>
   </div>
 
-  <h4 class="section-title">Leaderboard</h4>
-  <div class="card card-ui p-3">
-    <table class="table table-hover">
-      <thead>
-        <tr>
-          <th>Rank</th>
-          <th>Name</th>
-          <th>ELO</th>
-          <th>Action</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr><td>1</td><td>Charlie</td><td>1850</td><td><button class="btn btn-sm btn-primary">View</button></td></tr>
-        <tr><td>2</td><td>Alice</td><td>1720</td><td><button class="btn btn-sm btn-primary">View</button></td></tr>
-        <tr><td>3</td><td>{{ username }}</td><td>1650</td><td><button class="btn btn-sm btn-secondary">You</button></td></tr>
-        <tr><td>4</td><td>Bob</td><td>1600</td><td><button class="btn btn-sm btn-primary">View</button></td></tr>
-      </tbody>
-    </table>
-  </div>
+  <!--Tab headers-->
+  <ul class="nav nav-tabs mt-4" id="myTab" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active" id="friends-tab" data-bs-toggle="tab" data-bs-target="#friends" type="button" role="tab" aria-controls="friends" aria-selected="true">Friends</button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="leaderboard-tab" data-bs-toggle="tab" data-bs-target="#leaderboard" type="button" role="tab" aria-controls="leaderboard" aria-selected="false">Leaderboard</button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="pending-tab" data-bs-toggle="tab" data-bs-target="#pending" type="button" role="tab" aria-controls="pending" aria-selected="false">Pending requests(?)</button>
+    </li>
+  </ul>
 
-  <h4 class="section-title">Find Similar Skill Players</h4>
-  <div class="card card-ui p-3">
-    <input class="form-control mb-3" placeholder="Enter ELO range or name">
-    <button class="btn btn-dark">Search</button>
-  </div>
-
-  <h4 class="section-title">Friends</h4>
-  <div class="row">
-    <div class="col-md-4">
-      <div class="card card-ui p-3 text-center">
-        <h5>Alice</h5>
-        <p>Ranking: #2</p>
-        <button class="btn btn-sm btn-primary">View Profile</button>
-        <button class="btn btn-sm btn-success mt-2">Share Win</button>
+  <!--Content of each tabs-->
+  <div class="tab-content" id="myTabContent">
+    <!--Friends tab-->
+    <div class="tab-pane fade show active" id="friends" role="tabpanel" aria-labelledby="friends-tab">
+        <div class="row mt-4">
+          <div class="col-md-4">
+            <div class="card card-ui p-3 text-center">
+              <h5>Alice</h5>
+              <p>Ranking: #2</p>
+              <button class="btn btn-sm btn-primary">View Profile</button>
+              <button class="btn btn-sm btn-success mt-2">Share Win</button>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="card card-ui p-3 text-center">
+              <h5>Bob</h5>
+              <p>Ranking: #4</p>
+              <button class="btn btn-sm btn-primary">View Profile</button>
+              <button class="btn btn-sm btn-success mt-2">Share Win</button>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="card card-ui p-3 text-center">
+              <h5>Charlie</h5>
+              <p>Ranking: #1</p>
+              <button class="btn btn-sm btn-primary">View Profile</button>
+              <button class="btn btn-sm btn-success mt-2">Share Win</button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
-    <div class="col-md-4">
-      <div class="card card-ui p-3 text-center">
-        <h5>Bob</h5>
-        <p>Ranking: #4</p>
-        <button class="btn btn-sm btn-primary">View Profile</button>
-        <button class="btn btn-sm btn-success mt-2">Share Win</button>
-      </div>
-    </div>
-    <div class="col-md-4">
-      <div class="card card-ui p-3 text-center">
-        <h5>Charlie</h5>
-        <p>Ranking: #1</p>
-        <button class="btn btn-sm btn-primary">View Profile</button>
-        <button class="btn btn-sm btn-success mt-2">Share Win</button>
-      </div>
-    </div>
-  </div>
 
-  <h4 class="section-title">Tournament Calendar</h4>
-  <div class="card card-ui p-3">
-    <ul class="list-group">
-      <li class="list-group-item">April 18 - Blitz Tournament</li>
-      <li class="list-group-item">April 22 - Ranked Matches</li>
-      <li class="list-group-item">April 28 - Weekly Championship</li>
-    </ul>
+    <!--Leaderboard tab-->
+    <div class="tab-pane fade" id="leaderboard" role="tabpanel" aria-labelledby="leaderboard-tab">
+      <div class="card card-ui p-3 mt-4">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th>Rank</th>
+              <th>Name</th>
+              <th>ELO</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>1</td><td>Charlie</td><td>1850</td><td><button class="btn btn-sm btn-primary">View</button></td></tr>
+            <tr><td>2</td><td>Alice</td><td>1720</td><td><button class="btn btn-sm btn-primary">View</button></td></tr>
+            <tr><td>3</td><td>{{ username }}</td><td>1650</td><td><button class="btn btn-sm btn-secondary">You</button></td></tr>
+            <tr><td>4</td><td>Bob</td><td>1600</td><td><button class="btn btn-sm btn-primary">View</button></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
   </div>
-  
 </div>
 {% include '.footer.html' %}
 {% endblock %}
