@@ -24,21 +24,33 @@
     <div class="col-md-4">
       <div class="card card-ui mb-3">
         <div class="card-body">
-          <h5 class="card-title">Upcoming Matches</h5>
+          <h5 class="card-title">Your Matches</h5>
           <div class="upcoming-matches">
             {% for match, tournament in matches[:5] %}
+              {% set is_upcoming = (match.result or '')|lower == 'pending' %}
               <div class="match-item p-2 mb-2 border rounded">
                 <small class="text-muted">{{ match.date_played.strftime('%b %d, %Y') }}</small>
-                <div class="fw-bold">{{ tournament.name }}</div>
+                {% if tournament %}
+                  <div class="fw-bold">{{ tournament.name }}</div>
+                {% endif %}
                 <div>{{ match.player }} vs {{ match.opponent }}</div>
-                {% if match.result == 'pending' %}
-                  <span class="badge bg-warning">Pending</span>
-                {% elif match.result == 'win' %}
-                  <span class="badge bg-success">Win</span>
-                {% elif match.result == 'loss' %}
-                  <span class="badge bg-danger">Loss</span>
-                {% else %}
-                  <span class="badge bg-secondary">Draw</span>
+                <div class="mt-1">
+                  <small>Status:
+                    {% if is_upcoming %}
+                      <span class="badge bg-warning text-dark">Upcoming</span>
+                    {% else %}
+                      <span class="badge bg-success">Completed</span>
+                    {% endif %}
+                  </small>
+                </div>
+                {% if not is_upcoming %}
+                  {% if (match.result or '')|lower == 'win' %}
+                    <span class="badge bg-success">Win</span>
+                  {% elif (match.result or '')|lower == 'loss' %}
+                    <span class="badge bg-danger">Loss</span>
+                  {% else %}
+                    <span class="badge bg-secondary">Draw</span>
+                  {% endif %}
                 {% endif %}
               </div>
             {% endfor %}
@@ -58,16 +70,17 @@
               <span class="fw-bold">{{ matches|length }}</span>
             </div>
           </div>
+          {% set upcoming_count = matches|map(attribute=0)|selectattr('result', 'equalto', 'pending')|list|length %}
           <div class="stat-item mb-2">
             <div class="d-flex justify-content-between">
-              <span>Pending:</span>
-              <span class="fw-bold text-warning">{{ matches|selectattr('result', 'equalto', 'pending')|list|length }}</span>
+              <span>Upcoming:</span>
+              <span class="fw-bold text-warning">{{ upcoming_count }}</span>
             </div>
           </div>
           <div class="stat-item">
             <div class="d-flex justify-content-between">
               <span>Completed:</span>
-              <span class="fw-bold text-success">{{ matches|rejectattr('result', 'equalto', 'pending')|list|length }}</span>
+              <span class="fw-bold text-success">{{ matches|length - upcoming_count }}</span>
             </div>
           </div>
         </div>
@@ -92,7 +105,12 @@
       },
       events: eventsData,
       eventClick: function(info) {
-        alert('Match: ' + info.event.title + '\nDate: ' + info.event.start.toLocaleString());
+        var props = info.event.extendedProps || {};
+        var details = 'Match: ' + info.event.title + '\nDate: ' + info.event.start.toLocaleString();
+        if (props.status) details += '\nStatus: ' + props.status;
+        if (props.status !== 'Upcoming' && props.result) details += '\nResult: ' + props.result;
+        if (props.colour) details += '\nColour: ' + props.colour;
+        alert(details);
       }
     });
     calendar.render();

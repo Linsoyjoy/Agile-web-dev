@@ -32,14 +32,26 @@
       <div class="card p-3">
         <h1>Latest match</h1>
         {% if latest_match %}
-          <div class="latest-match-info">
+          {% set is_upcoming = latest_match.result and latest_match.result.lower() == 'pending' %}
+          <div class="latest-match-info p-3 rounded" style="background-color: #2c2f33; color: #f8f9fa;">
             <p><strong>{{ latest_match.player }} vs {{ latest_match.opponent }}</strong></p>
-            <p>Result: <span class="badge bg-{{ 'success' if latest_match.result.lower() == 'win' else 'danger' if latest_match.result.lower() == 'loss' else 'secondary' }}">
-              {{ latest_match.result|capitalize }}
-            </span></p>
+            <p>Status:
+              {% if is_upcoming %}
+                <span class="badge bg-warning text-dark">Upcoming</span>
+              {% else %}
+                <span class="badge bg-success">Completed</span>
+              {% endif %}
+            </p>
+            {% if not is_upcoming %}
+              <p>Result: <span class="badge bg-{{ 'success' if latest_match.result.lower() == 'win' else 'danger' if latest_match.result.lower() == 'loss' else 'secondary' }}">
+                {{ latest_match.result|capitalize }}
+              </span></p>
+            {% endif %}
             <p>Color: {{ latest_match.player_colour|capitalize }}</p>
             <p>Date: {{ latest_match.date_played.strftime('%b %d, %Y') }}</p>
-            <p>Termination: {{ latest_match.termination|capitalize }}</p>
+            {% if latest_match.termination %}
+              <p class="mb-0">Termination: {{ latest_match.termination|capitalize }}</p>
+            {% endif %}
           </div>
         {% else %}
           <p>No matches recorded yet. <a href="{{ url_for('main.new_record') }}">Add your first match!</a></p>
