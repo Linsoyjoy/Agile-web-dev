@@ -8,22 +8,30 @@
 
     <form method="post" action="{{ url_for('main.new_record') }}">
       <div class="row g-3">
-        <div class="col-md-6">
+        <div class="col-md-4">
+          <label class="form-label" for="match_type">Match Type</label>
+          <select class="form-select" id="match_type" name="match_type" required onchange="toggleMatchFields()">
+            <option value="past">Past Match (Already Played)</option>
+            <option value="upcoming">Upcoming Match (Scheduled)</option>
+          </select>
+        </div>
+
+        <div class="col-md-4">
           <label class="form-label" for="opponent">Opponent</label>
           <input class="form-control" id="opponent" name="opponent" required>
         </div>
 
-        <div class="col-md-3">
+        <div class="col-md-4" id="result_field">
           <label class="form-label" for="result">Result</label>
           <select class="form-select" id="result" name="result" required>
-            <option value="Win">Win</option>
-            <option value="Loss">Loss</option>
-            <option value="Draw">Draw</option>
-            <option value="Pending">Pending</option>
+            <option value="win">Win</option>
+            <option value="loss">Loss</option>
+            <option value="draw">Draw</option>
+            <option value="pending">Pending</option>
           </select>
         </div>
 
-        <div class="col-md-3">
+        <div class="col-md-4" id="colour_field">
           <label class="form-label" for="colour">Colour</label>
           <select class="form-select" id="colour" name="colour" required>
             <option value="White">White</option>
@@ -31,14 +39,15 @@
           </select>
         </div>
 
-        <div class="col-md-6">
+        <div class="col-md-4" id="opening_field">
           <label class="form-label" for="opening">Opening</label>
           <input class="form-control" id="opening" name="opening" placeholder="e.g. Sicilian Defense">
         </div>
 
-        <div class="col-md-3">
+        <div class="col-md-4" id="termination_field">
           <label class="form-label" for="termination">Termination</label>
-          <select class="form-select" id="termination" name="termination" required>
+          <select class="form-select" id="termination" name="termination">
+            <option value="">Select termination</option>
             <option value="Checkmate">Checkmate</option>
             <option value="Resignation">Resignation</option>
             <option value="Timeout">Timeout</option>
@@ -49,22 +58,118 @@
           </select>
         </div>
 
-        <div class="col-md-3">
-          <label class="form-label" for="date_played">Date played</label>
+        <div class="col-md-4">
+          <label class="form-label" for="date_played">Date</label>
           <input class="form-control" id="date_played" name="date_played" type="date" required>
         </div>
 
-        <div class="col-12">
+        <div class="col-md-4" id="time_field">
+          <label class="form-label" for="time_played">Time</label>
+          <input class="form-control" id="time_played" name="time_played" type="time">
+        </div>
+
+        <div class="col-md-4" id="location_field">
+          <label class="form-label" for="location">Location</label>
+          <input class="form-control" id="location" name="location" placeholder="e.g. Online, Club, Tournament">
+        </div>
+
+        <div class="col-12" id="game_record_field">
           <label class="form-label" for="game_record">Game Record</label>
           <textarea class="form-control" id="game_record" name="game_record" rows="4" placeholder="e.g. 1.e4 e5 2.Nf3 Nc6 ..."></textarea>
         </div>
 
+        <div class="col-12" id="notes_field">
+          <label class="form-label" for="notes">Notes</label>
+          <textarea class="form-control" id="notes" name="notes" rows="2" placeholder="Additional notes about the match..."></textarea>
+        </div>
+
         <div class="col-12 text-end">
           <button class="btn btn-primary" type="submit">Save Record</button>
-          <a class="btn btn-secondary" href="{{ url_for('viewstats') }}">Cancel</a>
+          <a class="btn btn-secondary" href="{{ url_for('main.viewstats') }}">Cancel</a>
         </div>
       </div>
     </form>
   </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function toggleMatchFields() {
+  const matchType = document.getElementById('match_type').value;
+  const isPast = matchType === 'past';
+  
+  // Fields that should be shown for past matches
+  const pastFields = ['result_field', 'termination_field', 'game_record_field'];
+  // Fields that should be shown for upcoming matches
+  const upcomingFields = ['time_field', 'location_field', 'notes_field'];
+  // Fields that should be shown for both
+  const commonFields = ['colour_field', 'opening_field'];
+  
+  // Toggle past match fields
+  pastFields.forEach(fieldId => {
+    const field = document.getElementById(fieldId);
+    if (field) {
+      field.style.display = isPast ? 'block' : 'none';
+      const inputs = field.querySelectorAll('input, select, textarea');
+      inputs.forEach(input => {
+        if (isPast) {
+          input.setAttribute('required', 'required');
+        } else {
+          input.removeAttribute('required');
+          input.value = '';
+        }
+      });
+    }
+  });
+  
+  // Toggle upcoming match fields
+  upcomingFields.forEach(fieldId => {
+    const field = document.getElementById(fieldId);
+    if (field) {
+      field.style.display = isPast ? 'none' : 'block';
+      const inputs = field.querySelectorAll('input, select, textarea');
+      inputs.forEach(input => {
+        if (!isPast) {
+          input.setAttribute('required', 'required');
+        } else {
+          input.removeAttribute('required');
+          input.value = '';
+        }
+      });
+    }
+  });
+  
+  // Update result field options
+  const resultSelect = document.getElementById('result');
+  if (resultSelect) {
+    resultSelect.innerHTML = '';
+    if (isPast) {
+      resultSelect.innerHTML = `
+        <option value="win">Win</option>
+        <option value="loss">Loss</option>
+        <option value="draw">Draw</option>
+      `;
+    } else {
+      resultSelect.innerHTML = `
+        <option value="pending">Scheduled</option>
+        <option value="win">Win (Prediction)</option>
+        <option value="loss">Loss (Prediction)</option>
+        <option value="draw">Draw (Prediction)</option>
+      `;
+    }
+  }
+  
+  // Update date label
+  const dateLabel = document.querySelector('label[for="date_played"]');
+  if (dateLabel) {
+    dateLabel.textContent = isPast ? 'Date Played' : 'Date Scheduled';
+  }
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+  toggleMatchFields();
+});
+</script>
 {% endblock %}
