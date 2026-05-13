@@ -1,0 +1,71 @@
+{% extends ".header.html" %}
+{% block title %}Edit Match - Chessmate{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+  <div class="card card-ui p-4">
+    <h2 class="mb-4">Edit Match Record</h2>
+
+    <form method="POST" action="{{ url_for('main.edit_match', match_id=match.id) }}">
+      <div class="row g-3">
+
+        <div class="col-md-4">
+          <label class="form-label" for="opponent">Opponent</label>
+          <input class="form-control" id="opponent" name="opponent" required value="{{ match.opponent }}">
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label" for="result">Result</label>
+          <select class="form-select" id="result" name="result" required>
+            <option value="win" {% if match.result == 'win' %}selected{% endif %}>Win</option>
+            <option value="loss" {% if match.result == 'loss' %}selected{% endif %}>Loss</option>
+            <option value="draw" {% if match.result == 'draw' %}selected{% endif %}>Draw</option>
+            <option value="pending" {% if match.result == 'pending' %}selected{% endif %}>Pending</option>
+          </select>
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label" for="colour">Colour</label>
+          <select class="form-select" id="colour" name="colour" required>
+            <option value="White" {% if match.player_colour == 'White' %}selected{% endif %}>White</option>
+            <option value="Black" {% if match.player_colour == 'Black' %}selected{% endif %}>Black</option>
+          </select>
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label" for="date_played">Date</label>
+          <input class="form-control" id="date_played" name="date_played" type="date" required
+                 value="{{ match.date_played.strftime('%Y-%m-%d') if match.date_played }}">
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label" for="termination">Termination</label>
+          <select class="form-select" id="termination" name="termination">
+            <option value="">Select termination</option>
+            <option value="Checkmate" {% if match.termination == 'Checkmate' %}selected{% endif %}>Checkmate</option>
+            <option value="Resignation" {% if match.termination == 'Resignation' %}selected{% endif %}>Resignation</option>
+            <option value="Timeout" {% if match.termination == 'Timeout' %}selected{% endif %}>Timeout</option>
+            <option value="Repetition" {% if match.termination == 'Repetition' %}selected{% endif %}>Repetition</option>
+            <option value="Insufficient Material" {% if match.termination == 'Insufficient Material' %}selected{% endif %}>Insufficient Material</option>
+            <option value="Stalemate" {% if match.termination == 'Stalemate' %}selected{% endif %}>Stalemate</option>
+            <option value="Draw by agreement" {% if match.termination == 'Draw by agreement' %}selected{% endif %}>Draw by agreement</option>
+          </select>
+        </div>
+
+        <div class="col-12">
+          <label class="form-label" for="game_record">Game Record</label>
+          <textarea class="form-control" id="game_record" name="game_record" rows="4"
+                    placeholder="e.g. 1.e4 e5 2.Nf3 Nc6 ...">{{ match.moves or '' }}</textarea>
+        </div>
+
+        <div class="col-12 text-end">
+          <button class="btn btn-primary" type="submit">Save Changes</button>
+          <a class="btn btn-secondary" href="{{ url_for('main.viewstats') }}">Cancel</a>
+        </div>
+
+      </div>
+    </form>
+  </div>
+</div>
+{% include '.footer.html' %}
+{% endblock %}
