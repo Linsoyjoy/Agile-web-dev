@@ -28,3 +28,15 @@ class Match(db.Model):
     termination = db.Column(db.String(50))  # reason game ended (e.g. 'checkmate', 'resignation', 'timeout', etc.)
     date_played = db.Column(db.DateTime, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class Friendship(db.Model):
+    __tablename__ = 'friendship'
+    id = db.Column(db.Integer, primary_key=True)
+    requester_id = db.Column(db.String(100), db.ForeignKey('user.username'), nullable=False)
+    addressee_id = db.Column(db.String(100), db.ForeignKey('user.username'), nullable=False)
+    status = db.Column(db.String(20), nullable=False, default='pending')  # 'pending', 'accepted', 'declined'
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Ensure no duplicate friendships and prevent self-friendship
+    __table_args__ = (db.UniqueConstraint('requester_id', 'addressee_id', name='unique_friendship'),)
