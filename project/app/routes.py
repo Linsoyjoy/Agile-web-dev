@@ -708,8 +708,11 @@ def viewstats():
         'draws': draws,
         'win_rate': win_rate,
         'ranking': f'#{user_rank}',
+        'ELO': 1200 + (wins * 10),
     }
-    return render_template('viewstats.html', username=username, user=user, stats=stats)
+
+    my_matches = Match.query.filter_by(player=username).order_by(Match.date_played.desc()).all()
+    return render_template('viewstats.html', username=username, user=user, stats=stats, matches=my_matches)
 
 @main.route('/calendar')
 def calendar():
@@ -870,6 +873,65 @@ def new_record():
         return redirect(url_for('main.home'))
 
     return render_template('new_record.html')
+
+@main.route('/match/<int:match_id>/edit', methods=['GET', 'POST'])
+def edit_match(match_id):
+    if 'username' not in session:
+        flash('Please log in to access this page!', 'error')
+        return redirect(url_for('main.login'))
+
+    match = Match.query.get_or_404(match_id)
+    if match.player != session['username']:
+        flash('You can only edit your own matches.', 'error')
+        return redirect(url_for('main.viewstats'))
+
+    if request.method == 'POST':
+        opponent = request.form.get('opponent', '').strip()
+        result = request.form.get('result', '').strip()
+        colour = request.form.get('colour', '').strip()
+        date_played_str = request.form.get('date_played', '').strip()
+        termination = request.form.get('termination', '').strip()
+        game_record = request.form.get('game_record', '').strip()
+
+        if not opponent or not result or not colour or not date_played_str:
+            flash('Please fill in all required fields!', 'error')
+            return render_template('edit_match.html', match=match)
+
+        try:
+            date_played = datetime.strptime(date_played_str, '%Y-%m-%d')
+        except ValueError:
+            flash('Invalid date format.', 'error')
+            return render_template('edit_match.html', match=match)
+
+        match.opponent = opponent
+        match.result = result
+        match.player_colour = colour
+        match.date_played = date_played
+        match.termination = termination
+        match.moves = game_record
+        db.session.commit()
+        flash('Match updated successfully!', 'success')
+        return redirect(url_for('main.viewstats'))
+
+    return render_template('edit_match.html', match=match)
+
+
+@main.route('/match/<int:match_id>/delete', methods=['POST'])
+def delete_match(match_id):
+    if 'username' not in session:
+        flash('Please log in to access this page!', 'error')
+        return redirect(url_for('main.login'))
+
+    match = Match.query.get_or_404(match_id)
+    if match.player != session['username']:
+        flash('You can only delete your own matches.', 'error')
+        return redirect(url_for('main.viewstats'))
+
+    db.session.delete(match)
+    db.session.commit()
+    flash('Match deleted.', 'success')
+    return redirect(url_for('main.viewstats'))
+
 
 @main.route('/query', methods=['GET', 'POST'])
 def query():
