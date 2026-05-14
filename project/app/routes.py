@@ -31,7 +31,7 @@ def upload_profile_pic():
         flash('Only PNG, JPG and GIF files are allowed', 'error')
         return redirect(url_for('main.profile'))
     filename = secure_filename(session['username'] + '.' + ext)
-    upload_dir = os.path.join(main.static_folder, 'images', 'profiles')
+    upload_dir = os.path.join(os.path.dirname(__file__), 'static', 'images', 'profiles')
     os.makedirs(upload_dir, exist_ok=True)
     file.save(os.path.join(upload_dir, filename))
     user = User.query.filter_by(username=session['username']).first()
