@@ -20,7 +20,8 @@
 
         <div class="col-md-4">
           <label class="form-label" for="opponent">Opponent</label>
-          <input class="form-control" id="opponent" name="opponent" required>
+          <input class="form-control" id="opponent" name="opponent" required autocomplete="off">
+          <div id="opponent-status" class="form-text"></div>
         </div>
 
         <div class="col-md-4" id="result_field">
@@ -38,8 +39,8 @@
           <label class="form-label" for="colour">Colour</label>
           <select class="form-select" id="colour" name="colour" required>
             <option value="">Select colour</option>
-            <option value="White">White</option>
-            <option value="Black">Black</option>
+            <option value="white">White</option>
+            <option value="black">Black</option>
           </select>
         </div>
 
@@ -176,6 +177,30 @@ function toggleMatchFields() {
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
   toggleMatchFields();
+
+  // Opponent ChessMate lookup
+  const opponentInput = document.getElementById('opponent');
+  const statusEl = document.getElementById('opponent-status');
+  let lookupTimer = null;
+
+  opponentInput.addEventListener('input', function() {
+    clearTimeout(lookupTimer);
+    const val = opponentInput.value.trim();
+    if (!val) { statusEl.textContent = ''; return; }
+    lookupTimer = setTimeout(function() {
+      fetch('/lookup_user?username=' + encodeURIComponent(val))
+        .then(r => r.json())
+        .then(data => {
+          if (data.found) {
+            statusEl.innerHTML = '✓ Found on ChessMate — their stats will update automatically';
+            statusEl.className = 'form-text text-success';
+          } else {
+            statusEl.textContent = 'Not on ChessMate — will be recorded as external player';
+            statusEl.className = 'form-text text-muted';
+          }
+        });
+    }, 400);
+  });
 });
 </script>
 {% endblock %}

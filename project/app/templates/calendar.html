@@ -28,6 +28,7 @@
           <div class="upcoming-matches">
             {% for match, tournament in matches[:5] %}
               {% set is_upcoming = (match.result or '')|lower == 'pending' %}
+              {% set r = (match.result or '')|lower %}
               <div class="match-item p-2 mb-2 border rounded">
                 <small class="text-muted">{{ match.date_played.strftime('%b %d, %Y') }}</small>
                 {% if tournament %}
@@ -35,29 +36,23 @@
                 {% endif %}
                 <div>{{ match.player }} vs {{ match.opponent }}</div>
                 <div class="mt-1">
-                  <small>Status:
-                    {% if is_upcoming %}
-                      <span class="badge bg-warning text-dark">Upcoming</span>
-                    {% else %}
-                      <span class="badge bg-success">Completed</span>
-                    {% endif %}
-                  </small>
-                </div>
-                {% if not is_upcoming %}
-                  {% if (match.result or '')|lower == 'win' %}
+                  {% if is_upcoming %}
+                    <span class="badge bg-warning text-dark">Upcoming</span>
+                  {% elif r == 'win' %}
                     <span class="badge bg-success">Win</span>
-                  {% elif (match.result or '')|lower == 'loss' %}
+                  {% elif r == 'loss' %}
                     <span class="badge bg-danger">Loss</span>
                   {% else %}
                     <span class="badge bg-secondary">Draw</span>
                   {% endif %}
-                {% endif %}
+                </div>
               </div>
             {% endfor %}
             {% if not matches %}
               <p class="text-muted">No matches scheduled yet.</p>
             {% endif %}
           </div>
+          <a href="{{ url_for('main.viewstats') }}" class="btn btn-sm btn-outline-primary mt-2">View all matches</a>
         </div>
       </div>
 

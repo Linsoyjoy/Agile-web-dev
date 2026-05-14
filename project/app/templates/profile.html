@@ -44,6 +44,7 @@
           <li class="list-group-item">{{ match.result }} vs {{ match.opponent }}</li>
           {% endfor %}
         </ul>
+        <a href="{{ url_for('main.viewstats') }}" class="btn btn-sm btn-outline-primary mt-2">View all matches</a>
       </div>
     </div>
     <div class="col-md-6">
@@ -59,7 +60,11 @@
 
   <div class="card mt-4 p-3">
     <h5>Identified Weaknesses</h5>
-    <p>{{ stats.weaknesses }}</p>
+    <form method="POST" action="{{ url_for('main.save_weaknesses') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <textarea class="form-control mb-2" name="weaknesses" rows="3" placeholder="Enter your identified weaknesses...">{{ stats.weaknesses }}</textarea>
+      <button type="submit" class="btn btn-sm btn-primary">Save</button>
+    </form>
   </div>
 
 </div>
