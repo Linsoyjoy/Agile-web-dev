@@ -30,7 +30,6 @@ class Match(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class Friendship(db.Model):
-    __tablename__ = 'friendship'
     id = db.Column(db.Integer, primary_key=True)
     requester_id = db.Column(db.String(100), db.ForeignKey('user.username'), nullable=False)
     addressee_id = db.Column(db.String(100), db.ForeignKey('user.username'), nullable=False)
@@ -40,3 +39,11 @@ class Friendship(db.Model):
     
     # Ensure no duplicate friendships and prevent self-friendship
     __table_args__ = (db.UniqueConstraint('requester_id', 'addressee_id', name='unique_friendship'),)
+
+class Query(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(100))
+    issue_type = db.Column(db.String(20), nullable=False, default='other')
+    title = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.String(1000))
+    priority = db.Column(db.String(20), nullable=False, default='none')
