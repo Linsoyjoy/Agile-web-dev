@@ -21,6 +21,7 @@
       <form method="POST" action="{{ url_for('main.upload_profile_pic') }}" enctype="multipart/form-data" id="pic-form">
         <label class="position-absolute bottom-0 end-0 btn btn-sm btn-light rounded-circle p-1 mb-0"
                style="width:28px;height:28px;cursor:pointer;" title="Change photo">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <i class="bi bi-pencil" style="font-size:12px;"></i>
           <input type="file" name="profile_pic" id="pic-input" accept="image/*" onchange="previewPic(this)" hidden>
         </label>
@@ -30,7 +31,10 @@
       <h2>{{ user.username }}</h2>
       <p class="mb-1 text-muted">{{ user.email }}</p>
       <p>Ranking: <strong>{{ stats.ranking }}</strong></p>
-      <button class="btn btn-primary btn-custom" onclick="addFriend()">Add Friend</button>
+      <form method="POST" action="{{ url_for('main.add_friend') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn btn-primary btn-custom" type="submit">Add Friend</button>
+      </form>
       <button class="btn btn-success btn-custom" onclick="shareProfile()">Share Profile</button>
     </div>
   </div>

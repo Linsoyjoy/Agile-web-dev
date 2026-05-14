@@ -661,9 +661,8 @@ def forgotpassword():
         session['resetstep'] = 1
 
     if request.method == 'POST':
-        if session['resetstep'] != 2 and session['resetstep'] != 3:
-            length = len(request.form)
-            if request.form.get('Email') and length == 1:
+        if session['resetstep'] == 1:
+            if request.form.get('Email'):
                 session['resetemail'] = request.form.get('Email')
                 user = User.query.filter_by(email=session['resetemail']).first()
                 if user:
@@ -678,44 +677,51 @@ def forgotpassword():
                     print("Email does not match to user")
                 flash('If your account is valid, a verification code has been sent to your email', 'success')
                 session['resetstep'] = 2
-                return render_template('forgotpassword.html', resetstep = 2)
+                return redirect(url_for('main.forgotpassword'))
         elif session['resetstep'] == 2:
-            length = len(request.form)
-            if request.form.get('Code') and length == 1:
+            if request.form.get('Code'):
                 inputcode = request.form.get('Code')
-                if inputcode == session['resetcode']:
+                if session['resetcode'] and inputcode == session['resetcode']:
                     flash('Verification successful! Please enter your new password.', 'success')
                     session['resetstep'] = 3
-                    return render_template('forgotpassword.html', resetstep = 3)
+                    return redirect(url_for('main.forgotpassword'))
                 else:
                     session['resetstep'] = 1
                     session.pop('resetcode', None)
                     flash('Invalid verification code! Please try again.', 'error')
 
-                    return render_template('forgotpassword.html', resetstep = 1)
+                    return redirect(url_for('main.forgotpassword'))
+        
         elif session['resetstep'] == 3:
-            length = len(request.form)
-            if request.form.get('Password') and request.form.get('Confirm_Password') and length == 2:
+            if request.form.get('Password') and request.form.get('Confirm_Password'):
                 password = request.form.get('Password')
                 confirm_password = request.form.get('Confirm_Password')
                 if password != confirm_password:
                     flash('Passwords do not match! Please try again.', 'error')
-                    return render_template('forgotpassword.html', resetstep = 3)
+                    return redirect(url_for('main.forgotpassword'))
                 elif len(password) < 6:
                     flash('Password must be at least 6 characters long! Please try again.', 'error')
-                    return render_template('forgotpassword.html', resetstep = 3)
+                    return redirect(url_for('main.forgotpassword'))
                 else:
                     # Update user's password
                     user = User.query.filter_by(email=session.get('resetemail')).first()
                     if user:
                         user.password_hash = generate_password_hash(password)
-                        db.session.commit()
+                        try:
+                            db.session.commit()
+                        except Exception as e:
+                            db.session.rollback()
+                            print("DB Error:", str(e))
                         flash('Your password has been reset successfully! Please log in with your new password.', 'success')
                         session.pop('resetcode', None)
-                        session['resetstep'] = 1
+                        session.pop('resetstep', None)
                         return redirect(url_for('main.login'))
                     else:
                         flash('An error occurred while resetting your password. Please try again.', 'error')
                         session['resetstep'] = 1
-                        return render_template('forgotpassword.html', resetstep = 1)
-    return render_template('forgotpassword.html', resetstep = 1)
+                        return redirect(url_for('main.forgotpassword'))
+            else:
+                flash('Please fill in all required fields!', 'error')
+                return redirect(url_for('main.forgotpassword'))
+    else:
+        return render_template('forgotpassword.html', resetstep = session['resetstep'])
