@@ -6,7 +6,7 @@ from werkzeug.utils import secure_filename
 
 from app import db
 from .blueprints import main
-from .models import User, Tournament, Match, Friendship
+from .models import User, Tournament, Match, Friendship, Query
 from .forgot_password import reset_password_email
 from datetime import date, datetime
 
@@ -932,7 +932,6 @@ def delete_match(match_id):
     flash('Match deleted.', 'success')
     return redirect(url_for('main.viewstats'))
 
-
 @main.route('/query', methods=['GET', 'POST'])
 def query():
     if 'username' not in session:
@@ -943,7 +942,6 @@ def query():
         issue_type = request.form['issue_type']
         title = request.form['title']
         description = request.form['description']
-        priority = request.form['priority']
         email = request.form.get('email', '')
         
         # TODO: Store issue in database or send email
@@ -955,14 +953,6 @@ def query():
 
 @main.route('/faq', methods=['GET', 'POST'])
 def faq():
-    if request.method == 'POST':
-        name = request.form['name']
-        email = request.form['email']
-        query = request.form['query']
-        # TODO: Store query in database or send email
-        flash('Your query has been submitted successfully! We will get back to you soon.', 'success')
-        return redirect(url_for('main.faq'))
-
     return render_template('faq.html')
 
 @main.route('/leaderboard')
