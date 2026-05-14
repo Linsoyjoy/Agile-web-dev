@@ -1,9 +1,9 @@
-{% extends "base.html" %}
+{% extends ".header.html" %}
 {% block title %}Add New Game Record - Chessmate{% endblock %}
 
 {% block content %}
 <div class="container mt-5">
-  <div class="card record-card p-4">
+  <div class="card card-ui p-4">
     <h2 class="mb-4">Add New Game Record</h2>
 
     <form method="post" action="{{ url_for('main.new_record') }}">
@@ -12,6 +12,7 @@
         <div class="col-md-4">
           <label class="form-label" for="match_type">Match Type</label>
           <select class="form-select" id="match_type" name="match_type" required onchange="toggleMatchFields()">
+            <option value="">Select match type</option>
             <option value="past">Past Match (Already Played)</option>
             <option value="upcoming">Upcoming Match (Scheduled)</option>
           </select>
@@ -25,6 +26,7 @@
         <div class="col-md-4" id="result_field">
           <label class="form-label" for="result">Result</label>
           <select class="form-select" id="result" name="result" required>
+            <option value="">Select result</option>
             <option value="win">Win</option>
             <option value="loss">Loss</option>
             <option value="draw">Draw</option>
@@ -35,6 +37,7 @@
         <div class="col-md-4" id="colour_field">
           <label class="form-label" for="colour">Colour</label>
           <select class="form-select" id="colour" name="colour" required>
+            <option value="">Select colour</option>
             <option value="White">White</option>
             <option value="Black">Black</option>
           </select>
@@ -92,6 +95,7 @@
     </form>
   </div>
 </div>
+{% include '.footer.html' %}
 {% endblock %}
 
 {% block scripts %}
@@ -147,6 +151,7 @@ function toggleMatchFields() {
     resultSelect.innerHTML = '';
     if (isPast) {
       resultSelect.innerHTML = `
+        <option value="">Select result</option>
         <option value="win">Win</option>
         <option value="loss">Loss</option>
         <option value="draw">Draw</option>

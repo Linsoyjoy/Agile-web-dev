@@ -1,11 +1,11 @@
-{% extends "base.html" %}
+{% extends ".header.html" %}
 {% block title %}Home - Chessmate{% endblock %}
 
 {% block content %}
 <div class="container mt-5">
   <div class="hero">
     <h1>Welcome back, {{ username }}!</h1>
-    <h4>Track your chess games, analyze your performance, and improve your skills.</h4>
+    <h4>Track your games, analyze your performances, and improve your skills.</h4>
   </div>
   
   <div class="row mt-4" style="margin-bottom: 40px;">
@@ -87,7 +87,7 @@
       </div>
       
       <!-- Recent Activity -->
-      <div class="card p-3 mt-3">
+      <div class="card p-3 mt-4">
         <h4>Recent Activity</h4>
         {% if recent_matches %}
         <div class="recent-activity-scroll">
@@ -111,24 +111,5 @@
     </div>
   </div>
 </div>
-<!--footer-->
-  <div class="footer">
-    <div class="container">
-      <div class="row align-items-center mt-3">
-        <!--Short description-->
-        <div class="col-md-1">
-          <img src="{{url_for('static',filename='images/icon.png')}}" alt="chessmate icon" style="width: 100px;">
-        </div>
-        <div class="col-md-5 text-md-start">
-          <h2 class="footer-desc">About Chessmate</h2>
-          <p class="footer-desc">Chessmate was made as part of the 2026 CITS3401 group project.</p>
-        </div>
-        <!--Random buttons-->
-        <div class="col-md-6 text-md-end">
-          <a href="{{url_for('main.faq')}}" class="footer-buttons">FAQs</a>
-          <a href="{{url_for('main.query')}}" class="footer-buttons">Report issue</a>
-        </div>
-      </div>
-    </div>
-  </div>
+{% include '.footer.html' %}
 {% endblock %}
