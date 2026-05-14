@@ -6,7 +6,7 @@ from werkzeug.utils import secure_filename
 
 from app import db
 from .blueprints import main
-from .models import User, Tournament, Match
+from .models import User, Tournament, Match, Friendship
 from .forgot_password import reset_password_email
 from datetime import date, datetime
 
@@ -108,7 +108,398 @@ def friends():
     if 'username' not in session:
         flash('Please log in to access this page!', 'error')
         return redirect(url_for('main.login'))
-    return render_template('friends.html', username=session['username'])
+    
+    current_user = session['username']
+    
+    # Get all users and calculate their rankings
+    all_users = User.query.all()
+    players = []
+    
+    for u in all_users:
+        matches = Match.query.filter(
+            (Match.player == u.username) | (Match.opponent == u.username)
+        ).all()
+        
+        wins = losses = draws = 0
+        for m in matches:
+            r = (m.result or '').lower()
+            if m.player == u.username:
+                if r == 'win': 
+                    wins += 1
+                elif r == 'loss': 
+                    losses += 1
+                elif r == 'draw': 
+                    draws += 1
+            else:
+                if r == 'loss': 
+                    wins += 1
+                elif r == 'win': 
+                    losses += 1
+                elif r == 'draw': 
+                    draws += 1
+        
+        total = wins + losses + draws
+        win_rate = round((wins / total * 100) if total > 0 else 0, 1)
+        
+        # Simple ELO calculation based on wins and win rate
+        elo = 1200 + (wins * 10) + (win_rate * 2)
+        
+        players.append({
+            'username': u.username,
+            'wins': wins,
+            'losses': losses,
+            'draws': draws,
+            'win_rate': win_rate,
+            'elo': round(elo),
+            'is_current_user': u.username == current_user
+        })
+    
+    # Sort by ELO (descending) and assign ranks
+    players.sort(key=lambda x: x['elo'], reverse=True)
+    for i, player in enumerate(players):
+        player['rank'] = i + 1
+    
+    # Get pending friend requests
+    pending_requests = Friendship.query.filter_by(addressee_id=current_user, status='pending').all()
+    
+    # Get current friends
+    current_friends = []
+    friendships = Friendship.query.filter(
+        ((Friendship.requester_id == current_user) | (Friendship.addressee_id == current_user)) &
+        (Friendship.status == 'accepted')
+    ).all()
+    
+    for friendship in friendships:
+        if friendship.requester_id == current_user:
+            friend_username = friendship.addressee_id
+        else:
+            friend_username = friendship.requester_id
+        
+        # Get friend's stats
+        friend_user = User.query.filter_by(username=friend_username).first()
+        if friend_user:
+            friend_matches = Match.query.filter(
+                (Match.player == friend_username) | (Match.opponent == friend_username)
+            ).all()
+            
+            wins = losses = draws = 0
+            for m in friend_matches:
+                r = (m.result or '').lower()
+                if m.player == friend_username:
+                    if r == 'win': wins += 1
+                    elif r == 'loss': losses += 1
+                    elif r == 'draw': draws += 1
+                else:
+                    if r == 'loss': wins += 1
+                    elif r == 'win': losses += 1
+                    elif r == 'draw': draws += 1
+            
+            total = wins + losses + draws
+            win_rate = round((wins / total * 100) if total > 0 else 0, 1)
+            elo = 1200 + (wins * 10) + (win_rate * 2)
+            
+            current_friends.append({
+                'username': friend_username,
+                'wins': wins,
+                'losses': losses,
+                'draws': draws,
+                'win_rate': win_rate,
+                'elo': round(elo)
+            })
+    
+    return render_template('friends.html', username=current_user, players=players, 
+                         pending_requests=pending_requests, current_friends=current_friends)
+
+@main.route('/add_friend', methods=['POST'])
+def add_friend():
+    if 'username' not in session:
+        return jsonify({'success': False, 'message': 'Please log in to access this page!'})
+    
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'success': False, 'message': 'Invalid request data!'})
+        
+        friend_username = data.get('friend_username', '').strip()
+        current_user = session['username']
+        
+        if not friend_username:
+            return jsonify({'success': False, 'message': 'Please enter a username!'})
+        
+        # Check if user exists
+        friend_user = User.query.filter_by(username=friend_username).first()
+        if not friend_user:
+            return jsonify({'success': False, 'message': 'User not found!'})
+        
+        # Check if trying to add self
+        if friend_username == current_user:
+            return jsonify({'success': False, 'message': 'You cannot add yourself as a friend!'})
+        
+        # For now, just return success and redirect to view user profile
+        # In a real implementation, you would add friend relationships to database
+        return jsonify({
+            'success': True, 
+            'message': f'Successfully found user: {friend_username}! Redirecting to their profile...',
+            'redirect': f'/view_user/{friend_username}'
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': 'An error occurred. Please try again.'})
+
+@main.route('/send_friend_request', methods=['POST'])
+def send_friend_request():
+    if 'username' not in session:
+        return jsonify({'success': False, 'message': 'Please log in to access this page!'})
+    
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'success': False, 'message': 'Invalid request data!'})
+        
+        target_username = data.get('target_username', '').strip()
+        current_user = session['username']
+        
+        if not target_username:
+            return jsonify({'success': False, 'message': 'Invalid target user!'})
+        
+        if target_username == current_user:
+            return jsonify({'success': False, 'message': 'You cannot send a friend request to yourself!'})
+        
+        # Check if target user exists
+        target_user = User.query.filter_by(username=target_username).first()
+        if not target_user:
+            return jsonify({'success': False, 'message': 'User not found!'})
+        
+        # Check if friendship already exists
+        existing_friendship = Friendship.query.filter(
+            ((Friendship.requester_id == current_user) & (Friendship.addressee_id == target_username)) |
+            ((Friendship.requester_id == target_username) & (Friendship.addressee_id == current_user))
+        ).first()
+        
+        if existing_friendship:
+            if existing_friendship.status == 'accepted':
+                return jsonify({'success': False, 'message': 'You are already friends!'})
+            elif existing_friendship.status == 'pending':
+                if existing_friendship.requester_id == current_user:
+                    return jsonify({'success': False, 'message': 'Friend request already sent!'})
+                else:
+                    return jsonify({'success': False, 'message': 'You have a pending friend request from this user!'})
+            elif existing_friendship.status == 'declined':
+                # Update declined request to pending
+                existing_friendship.status = 'pending'
+                existing_friendship.requester_id = current_user
+                existing_friendship.addressee_id = target_username
+                existing_friendship.updated_at = datetime.utcnow()
+                db.session.commit()
+                return jsonify({'success': True, 'message': 'Friend request sent successfully!'})
+        
+        # Create new friend request
+        new_friendship = Friendship(
+            requester_id=current_user,
+            addressee_id=target_username,
+            status='pending'
+        )
+        db.session.add(new_friendship)
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'Friend request sent successfully!'})
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': 'An error occurred. Please try again.'})
+
+@main.route('/respond_friend_request', methods=['POST'])
+def respond_friend_request():
+    if 'username' not in session:
+        return jsonify({'success': False, 'message': 'Please log in to access this page!'})
+    
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'success': False, 'message': 'Invalid request data!'})
+        
+        friendship_id = data.get('friendship_id')
+        action = data.get('action')  # 'accept' or 'decline'
+        current_user = session['username']
+        
+        if not friendship_id or action not in ['accept', 'decline']:
+            return jsonify({'success': False, 'message': 'Invalid request parameters!'})
+        
+        friendship = Friendship.query.get(friendship_id)
+        if not friendship:
+            return jsonify({'success': False, 'message': 'Friend request not found!'})
+        
+        if friendship.addressee_id != current_user:
+            return jsonify({'success': False, 'message': 'You cannot respond to this friend request!'})
+        
+        friendship.status = 'accepted' if action == 'accept' else 'declined'
+        friendship.updated_at = datetime.utcnow()
+        db.session.commit()
+        
+        action_text = 'accepted' if action == 'accept' else 'declined'
+        return jsonify({'success': True, 'message': f'Friend request {action_text}!'})
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': 'An error occurred. Please try again.'})
+
+@main.route('/remove_friend', methods=['POST'])
+def remove_friend():
+    if 'username' not in session:
+        return jsonify({'success': False, 'message': 'Please log in to access this page!'})
+    
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'success': False, 'message': 'Invalid request data!'})
+        
+        target_username = data.get('target_username', '').strip()
+        current_user = session['username']
+        
+        if not target_username:
+            return jsonify({'success': False, 'message': 'Invalid target user!'})
+        
+        # Find and remove friendship
+        friendship = Friendship.query.filter(
+            ((Friendship.requester_id == current_user) & (Friendship.addressee_id == target_username)) |
+            ((Friendship.requester_id == target_username) & (Friendship.addressee_id == current_user))
+        ).filter_by(status='accepted').first()
+        
+        if not friendship:
+            return jsonify({'success': False, 'message': 'You are not friends with this user!'})
+        
+        db.session.delete(friendship)
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'Friend removed successfully!'})
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': 'An error occurred. Please try again.'})
+
+@main.route('/view_user/<username>')
+def view_user(username):
+    if 'username' not in session:
+        flash('Please log in to access this page!', 'error')
+        return redirect(url_for('main.login'))
+    
+    user = User.query.filter_by(username=username).first()
+    if not user:
+        flash('User not found!', 'error')
+        return redirect(url_for('main.friends'))
+    
+    current_user = session['username']
+    
+    # Check friendship status
+    friendship_status = None
+    friendship = None
+    
+    if current_user != username:
+        # Check if there's any friendship between these users
+        friendship = Friendship.query.filter(
+            ((Friendship.requester_id == current_user) & (Friendship.addressee_id == username)) |
+            ((Friendship.requester_id == username) & (Friendship.addressee_id == current_user))
+        ).first()
+        
+        if friendship:
+            if friendship.status == 'accepted':
+                friendship_status = 'friends'
+            elif friendship.status == 'pending':
+                if friendship.requester_id == current_user:
+                    friendship_status = 'request_sent'
+                else:
+                    friendship_status = 'request_received'
+            elif friendship.status == 'declined':
+                if friendship.requester_id == current_user:
+                    friendship_status = 'request_declined'
+                else:
+                    friendship_status = 'not_friends'
+        else:
+            friendship_status = 'not_friends'
+    
+    # Get user's match statistics
+    user_matches = Match.query.filter(
+        (Match.player == username) | (Match.opponent == username)
+    ).all()
+    
+    wins = losses = draws = 0
+    recent_matches = []
+    
+    for match in user_matches:
+        r = (match.result or '').lower()
+        if match.player == username:
+            if r == 'win':
+                wins += 1
+                opponent = match.opponent
+                user_result = 'Win'
+            elif r == 'loss':
+                losses += 1
+                opponent = match.opponent
+                user_result = 'Loss'
+            elif r == 'draw':
+                draws += 1
+                opponent = match.opponent
+                user_result = 'Draw'
+            elif r == 'pending':
+                continue
+        else:
+            if r == 'loss':
+                wins += 1
+                opponent = match.player
+                user_result = 'Win'
+            elif r == 'win':
+                losses += 1
+                opponent = match.player
+                user_result = 'Loss'
+            elif r == 'draw':
+                draws += 1
+                opponent = match.player
+                user_result = 'Draw'
+            elif r == 'pending':
+                continue
+        
+        recent_matches.append({
+            'opponent': opponent,
+            'result': user_result,
+            'date': match.date_played,
+            'colour': match.player_colour if match.player == username else ('black' if match.player_colour == 'white' else 'white')
+        })
+    
+    total_games = wins + losses + draws
+    win_rate = round((wins / total_games * 100) if total_games > 0 else 0, 1)
+    
+    # Calculate ranking
+    all_users = User.query.all()
+    user_rankings = []
+    for u in all_users:
+        u_matches = Match.query.filter(
+            (Match.player == u.username) | (Match.opponent == u.username)
+        ).all()
+        u_wins = 0
+        for m in u_matches:
+            if m.player == u.username:
+                if (m.result or '').lower() == 'win':
+                    u_wins += 1
+            else:
+                if (m.result or '').lower() == 'loss':
+                    u_wins += 1
+        user_rankings.append((u.username, u_wins))
+    
+    user_rankings.sort(key=lambda x: x[1], reverse=True)
+    user_rank = next((i+1 for i, (u, _) in enumerate(user_rankings) if u == username), len(user_rankings))
+    
+    # Calculate ELO
+    elo = 1200 + (wins * 10) + (win_rate * 2)
+    
+    user_stats = {
+        'wins': wins,
+        'losses': losses,
+        'draws': draws,
+        'win_rate': win_rate,
+        'elo': round(elo),
+        'ranking': f'#{user_rank}',
+        'recent_matches': sorted(recent_matches, key=lambda x: x['date'], reverse=True)[:5]
+    }
+    
+    return render_template('view_user.html', user=user, stats=user_stats, current_user=current_user, 
+                         friendship_status=friendship_status, friendship=friendship)
 
 @main.route('/profile')
 def profile():
@@ -194,10 +585,10 @@ def profile():
         u_wins = 0
         for m in u_matches:
             if m.player == u.username:
-                if m.result == 'win':
+                if (m.result or '').lower() == 'win':
                     u_wins += 1
             else:
-                if m.result == 'loss':
+                if (m.result or '').lower() == 'loss':
                     u_wins += 1
         user_rankings.append((u.username, u_wins))
     
@@ -317,8 +708,11 @@ def viewstats():
         'draws': draws,
         'win_rate': win_rate,
         'ranking': f'#{user_rank}',
+        'ELO': 1200 + (wins * 10),
     }
-    return render_template('viewstats.html', username=username, user=user, stats=stats)
+
+    my_matches = Match.query.filter_by(player=username).order_by(Match.date_played.desc()).all()
+    return render_template('viewstats.html', username=username, user=user, stats=stats, matches=my_matches)
 
 @main.route('/calendar')
 def calendar():
@@ -480,6 +874,65 @@ def new_record():
 
     return render_template('new_record.html')
 
+@main.route('/match/<int:match_id>/edit', methods=['GET', 'POST'])
+def edit_match(match_id):
+    if 'username' not in session:
+        flash('Please log in to access this page!', 'error')
+        return redirect(url_for('main.login'))
+
+    match = Match.query.get_or_404(match_id)
+    if match.player != session['username']:
+        flash('You can only edit your own matches.', 'error')
+        return redirect(url_for('main.viewstats'))
+
+    if request.method == 'POST':
+        opponent = request.form.get('opponent', '').strip()
+        result = request.form.get('result', '').strip()
+        colour = request.form.get('colour', '').strip()
+        date_played_str = request.form.get('date_played', '').strip()
+        termination = request.form.get('termination', '').strip()
+        game_record = request.form.get('game_record', '').strip()
+
+        if not opponent or not result or not colour or not date_played_str:
+            flash('Please fill in all required fields!', 'error')
+            return render_template('edit_match.html', match=match)
+
+        try:
+            date_played = datetime.strptime(date_played_str, '%Y-%m-%d')
+        except ValueError:
+            flash('Invalid date format.', 'error')
+            return render_template('edit_match.html', match=match)
+
+        match.opponent = opponent
+        match.result = result
+        match.player_colour = colour
+        match.date_played = date_played
+        match.termination = termination
+        match.moves = game_record
+        db.session.commit()
+        flash('Match updated successfully!', 'success')
+        return redirect(url_for('main.viewstats'))
+
+    return render_template('edit_match.html', match=match)
+
+
+@main.route('/match/<int:match_id>/delete', methods=['POST'])
+def delete_match(match_id):
+    if 'username' not in session:
+        flash('Please log in to access this page!', 'error')
+        return redirect(url_for('main.login'))
+
+    match = Match.query.get_or_404(match_id)
+    if match.player != session['username']:
+        flash('You can only delete your own matches.', 'error')
+        return redirect(url_for('main.viewstats'))
+
+    db.session.delete(match)
+    db.session.commit()
+    flash('Match deleted.', 'success')
+    return redirect(url_for('main.viewstats'))
+
+
 @main.route('/query', methods=['GET', 'POST'])
 def query():
     if 'username' not in session:
@@ -526,13 +979,14 @@ def leaderboard():
         ).all()
         wins = losses = draws = 0
         for m in matches:
+            r = (m.result or '').lower()
             if m.player == u.username:
-                if m.result == 'win': wins += 1
-                elif m.result == 'loss': losses += 1
+                if r == 'win': wins += 1
+                elif r == 'loss': losses += 1
                 else: draws += 1
             else:
-                if m.result == 'loss': wins += 1
-                elif m.result == 'win': losses += 1
+                if r == 'loss': wins += 1
+                elif r == 'win': losses += 1
                 else: draws += 1
         total = wins + losses + draws
         players.append({

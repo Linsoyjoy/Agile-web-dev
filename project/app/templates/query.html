@@ -1,10 +1,10 @@
-{% extends "base.html" %}
+{% extends ".header.html" %}
 {% block title %}Submit Issue - Chessmate{% endblock %}
 
 {% block content %}
 <div class="container mt-5">
   <div class="row justify-content-center">
-    <div class="col-md-8">
+    <div class="col-md-9">
       <div class="header text-center mb-4">
         <h2>Submit an Issue</h2>
         <p>Report bugs, suggest features, or ask questions about Chessmate</p>
@@ -58,11 +58,8 @@
           </form>
         </div>
       </div>
-
-      <div class="text-center mt-3">
-        <a href="{{ url_for('main.home') }}" class="btn btn-outline-secondary">Back to Home</a>
-      </div>
     </div>
   </div>
 </div>
+{% include '.footer.html' %}
 {% endblock %}
