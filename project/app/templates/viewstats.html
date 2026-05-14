@@ -112,6 +112,7 @@
           </td>
           <td class="text-capitalize">{{ m.termination or '—' }}</td>
           <td class="text-end">
+            <a href="https://lichess.org/analysis/pgn/{{ m.moves }}" target="_blank"class="btn btn-sm btn-outline-info me-1">View</a>
             <a href="{{ url_for('main.edit_match', match_id=m.id) }}" class="btn btn-sm btn-outline-secondary me-1">Edit</a>
             <form method="POST" action="{{ url_for('main.delete_match', match_id=m.id) }}" class="d-inline"
                   onsubmit="return confirm('Delete this match?')">
