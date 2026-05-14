@@ -41,7 +41,14 @@
         <h5>Recent Matches</h5>
         <ul class="list-group">
           {% for match in stats.recent_matches %}
-          <li class="list-group-item">{{ match.result }} vs {{ match.opponent }}</li>
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            <div>
+              <span class="badge bg-{{ 'success' if match.result == 'Win' else 'danger' if match.result == 'Loss' else 'secondary' }} me-2">{{ match.result }}</span>
+              vs {{ match.opponent }}
+              <br><small class="text-muted">{{ match.colour }}</small>
+            </div>
+            <a href="{{ url_for('main.viewstats') }}" class="btn btn-sm btn-outline-secondary">View</a>
+          </li>
           {% endfor %}
         </ul>
         <a href="{{ url_for('main.viewstats') }}" class="btn btn-sm btn-outline-primary mt-2">View all matches</a>

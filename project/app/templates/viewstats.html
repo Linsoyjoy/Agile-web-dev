@@ -95,17 +95,28 @@
         </thead>
         <tbody>
           {% for m in matches %}
+          {% set is_player = m.player == username %}
+          {% set opponent_name = m.opponent if is_player else m.player %}
+          {% set r = (m.result or '') | lower %}
+          {% if is_player %}
+            {% set user_result = r %}
+            {% set user_colour = m.player_colour %}
+          {% else %}
+            {% set user_colour = 'black' if m.player_colour | lower == 'white' else 'white' %}
+            {% if r == 'win' %}{% set user_result = 'loss' %}
+            {% elif r == 'loss' %}{% set user_result = 'win' %}
+            {% else %}{% set user_result = r %}{% endif %}
+          {% endif %}
           <tr>
             <td>{{ m.date_played.strftime('%Y-%m-%d') if m.date_played else '—' }}</td>
-            <td>{{ m.opponent }}</td>
-            <td class="text-capitalize">{{ m.player_colour }}</td>
+            <td>{{ opponent_name }}</td>
+            <td class="text-capitalize">{{ user_colour }}</td>
             <td>
-              {% set r = (m.result or '') | lower %}
-              {% if r == 'win' %}
+              {% if user_result == 'win' %}
                 <span class="badge bg-success">Win</span>
-              {% elif r == 'loss' %}
+              {% elif user_result == 'loss' %}
                 <span class="badge bg-danger">Loss</span>
-              {% elif r == 'draw' %}
+              {% elif user_result == 'draw' %}
                 <span class="badge bg-secondary">Draw</span>
               {% else %}
                 <span class="badge bg-warning text-dark">Pending</span>
@@ -114,11 +125,13 @@
             <td class="text-capitalize">{{ m.termination or '—' }}</td>
             <td class="text-end">
               <a href="https://lichess.org/analysis/pgn/{{ m.moves }}" target="_blank" class="btn btn-sm btn-outline-info me-1">View</a>
+              {% if is_player %}
               <a href="{{ url_for('main.edit_match', match_id=m.id) }}" class="btn btn-sm btn-outline-secondary me-1">Edit</a>
               <form method="POST" action="{{ url_for('main.delete_match', match_id=m.id) }}" class="d-inline"
                     onsubmit="return confirm('Delete this match?')">
                 <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
               </form>
+              {% endif %}
             </td>
           </tr>
           {% endfor %}
