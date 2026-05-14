@@ -81,37 +81,40 @@
     <!--Leaderboard tab-->
     <div class="tab-pane fade" id="leaderboard" role="tabpanel" aria-labelledby="leaderboard-tab">
       <div class="card card-ui p-3 mt-4">
-        <table class="table table-hover">
-          <thead>
-            <tr>
-              <th>Rank</th>
-              <th>Name</th>
-              <th>ELO</th>
-              <th>Win Rate</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for player in players %}
-            <tr>
-              <td>{{ player.rank }}</td>
-              <td>{{ player.username }}</td>
-              <td>{{ player.elo }}</td>
-              <td>{{ player.win_rate }}%</td>
-              <td>
-                {% if player.is_current_user %}
-                  <button class="btn btn-sm btn-secondary" disabled>You</button>
-                {% else %}
-                  <a href="{{ url_for('main.view_user', username=player.username) }}" class="btn btn-sm btn-primary">View</a>
-                {% endif %}
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-        {% if players|length == 0 %}
+        <p class="text-muted mb-2">Showing rankings among you and your friends.</p>
+        <div style="max-height: 340px; overflow-y: auto;">
+          <table class="table table-hover mb-0">
+            <thead style="position: sticky; top: 0; background: var(--bs-body-bg, #fff); z-index: 1;">
+              <tr>
+                <th>Rank</th>
+                <th>Name</th>
+                <th>ELO</th>
+                <th>Win Rate</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for player in friends_leaderboard %}
+              <tr {% if player.username == username %}class="table-active fw-bold"{% endif %}>
+                <td>{{ player.friends_rank }}</td>
+                <td>{{ player.username }}</td>
+                <td>{{ player.elo }}</td>
+                <td>{{ player.win_rate }}%</td>
+                <td>
+                  {% if player.username == username %}
+                    <button class="btn btn-sm btn-secondary" disabled>You</button>
+                  {% else %}
+                    <a href="{{ url_for('main.view_user', username=player.username) }}" class="btn btn-sm btn-primary">View</a>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% if friends_leaderboard|length <= 1 %}
         <div class="text-center py-4">
-          <p class="text-muted">No players found in the system yet.</p>
+          <p class="text-muted">Add friends to see how you compare!</p>
         </div>
         {% endif %}
       </div>

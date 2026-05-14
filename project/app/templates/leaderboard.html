@@ -12,55 +12,57 @@
   <div class="row mt-4">
     <div class="col-12">
       <div class="card card-ui p-3">
-        <table class="table table-hover mb-0">
-          <thead>
-            <tr>
-              <th>Rank</th>
-              <th>Player</th>
-              <th>Wins</th>
-              <th>Losses</th>
-              <th>Draws</th>
-              <th>Win Rate</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for player in players %}
-            <tr {% if player.username == username %}class="table-active fw-bold"{% endif %}>
-              <td class="rank-cell" data-rank="{{ loop.index }}">#{{ loop.index }}</td>
-              <td>
-                {% if player.username != username %}
-                <a href="{{ url_for('main.h2h', opponent=player.username) }}" class="text-decoration-none">{{ player.username }}</a>
-                {% else %}
-                {{ player.username }}
-                {% endif %}
-              </td>
-              <td>{{ player.wins }}</td>
-              <td>{{ player.losses }}</td>
-              <td>{{ player.draws }}</td>
-              <td>{{ player.win_rate }}%</td>
-            </tr>
-            {% else %}
-            <tr>
-              <td class="rank-cell" data-rank="1">#1</td>
-              <td>Magnus Carlsen</td>
-              <td colspan="3" class="text-muted fst-italic">ELO: 2882</td>
-              <td>—</td>
-            </tr>
-            <tr>
-              <td class="rank-cell" data-rank="2">#2</td>
-              <td>Garry Kasparov</td>
-              <td colspan="3" class="text-muted fst-italic">ELO: 2851</td>
-              <td>—</td>
-            </tr>
-            <tr>
-              <td class="rank-cell" data-rank="3">#3</td>
-              <td>Bobby Fischer</td>
-              <td colspan="3" class="text-muted fst-italic">ELO: 2785</td>
-              <td>—</td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
+        <div style="max-height: 350px; overflow-y: auto;">
+          <table class="table table-hover mb-0">
+            <thead style="position: sticky; top: 0; background: var(--bs-body-bg, #fff); z-index: 1;">
+              <tr>
+                <th>Rank</th>
+                <th>Player</th>
+                <th>ELO</th>
+                <th>Wins</th>
+                <th>Losses</th>
+                <th>Draws</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for player in players %}
+              <tr {% if player.username == username %}class="table-active fw-bold"{% endif %}>
+                <td class="rank-cell" data-rank="{{ loop.index }}">#{{ loop.index }}</td>
+                <td>
+                  {% if player.username != username %}
+                  <a href="{{ url_for('main.h2h', opponent=player.username) }}" class="text-decoration-none">{{ player.username }}</a>
+                  {% else %}
+                  {{ player.username }}
+                  {% endif %}
+                </td>
+                <td>{{ player.elo }}</td>
+                <td>{{ player.wins }}</td>
+                <td>{{ player.losses }}</td>
+                <td>{{ player.draws }}</td>
+              </tr>
+              {% else %}
+              <tr>
+                <td class="rank-cell" data-rank="1">#1</td>
+                <td>Magnus Carlsen</td>
+                <td>2882</td>
+                <td colspan="3" class="text-muted fst-italic">—</td>
+              </tr>
+              <tr>
+                <td class="rank-cell" data-rank="2">#2</td>
+                <td>Garry Kasparov</td>
+                <td>2851</td>
+                <td colspan="3" class="text-muted fst-italic">—</td>
+              </tr>
+              <tr>
+                <td class="rank-cell" data-rank="3">#3</td>
+                <td>Bobby Fischer</td>
+                <td>2785</td>
+                <td colspan="3" class="text-muted fst-italic">—</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>

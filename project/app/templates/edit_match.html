@@ -27,8 +27,8 @@
         <div class="col-md-4">
           <label class="form-label" for="colour">Colour</label>
           <select class="form-select" id="colour" name="colour" required>
-            <option value="White" {% if match.player_colour == 'White' %}selected{% endif %}>White</option>
-            <option value="Black" {% if match.player_colour == 'Black' %}selected{% endif %}>Black</option>
+            <option value="white" {% if match.player_colour.lower() == 'white' %}selected{% endif %}>White</option>
+            <option value="black" {% if match.player_colour.lower() == 'black' %}selected{% endif %}>Black</option>
           </select>
         </div>
 

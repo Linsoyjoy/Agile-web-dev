@@ -4,7 +4,7 @@ from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 
-from app import db
+from app import db, csrf
 from .blueprints import main
 from .models import User, Tournament, Match, Friendship, Query
 from .forgot_password import reset_password_email
@@ -90,11 +90,11 @@ def home():
     total_games = wins + losses + draws
     win_rate = round((wins / total_games * 100) if total_games > 0 else 0, 1)
     
-    # Get recent activity (last 5 completed matches)
+    # Get recent activity (last 3 completed matches)
     recent_matches = Match.query.filter(
         (Match.player == username) | (Match.opponent == username),
         Match.result != 'pending'
-    ).order_by(Match.date_played.desc()).limit(5).all()
+    ).order_by(Match.date_played.desc()).limit(3).all()
     
     return render_template('home.html', 
                          username=username, 
@@ -207,9 +207,18 @@ def friends():
                 'elo': round(elo)
             })
     
-    return render_template('friends.html', username=current_user, players=players, 
-                         pending_requests=pending_requests, current_friends=current_friends)
+    # Build friends-only leaderboard (current user + accepted friends)
+    friend_usernames = {f['username'] for f in current_friends}
+    friend_usernames.add(current_user)
+    friends_leaderboard = [p for p in players if p['username'] in friend_usernames]
+    for i, p in enumerate(friends_leaderboard):
+        p['friends_rank'] = i + 1
 
+    return render_template('friends.html', username=current_user, players=players,
+                         pending_requests=pending_requests, current_friends=current_friends,
+                         friends_leaderboard=friends_leaderboard)
+
+@csrf.exempt
 @main.route('/add_friend', methods=['POST'])
 def add_friend():
     if 'username' not in session:
@@ -246,6 +255,7 @@ def add_friend():
     except Exception as e:
         return jsonify({'success': False, 'message': 'An error occurred. Please try again.'})
 
+@csrf.exempt
 @main.route('/send_friend_request', methods=['POST'])
 def send_friend_request():
     if 'username' not in session:
@@ -307,6 +317,7 @@ def send_friend_request():
     except Exception as e:
         return jsonify({'success': False, 'message': 'An error occurred. Please try again.'})
 
+@csrf.exempt
 @main.route('/respond_friend_request', methods=['POST'])
 def respond_friend_request():
     if 'username' not in session:
@@ -341,6 +352,7 @@ def respond_friend_request():
     except Exception as e:
         return jsonify({'success': False, 'message': 'An error occurred. Please try again.'})
 
+@csrf.exempt
 @main.route('/remove_friend', methods=['POST'])
 def remove_friend():
     if 'username' not in session:
@@ -640,8 +652,8 @@ def profile():
     if resignations > total_games * 0.4:
         weaknesses.append("Early resignations - develop endgame skills")
     
-    weaknesses_text = "; ".join(weaknesses) if weaknesses else "Keep practicing to identify areas for improvement!"
-    
+    computed_weaknesses = "; ".join(weaknesses) if weaknesses else "Keep practicing to identify areas for improvement!"
+
     user_stats = {
         'wins': wins,
         'losses': losses,
@@ -651,10 +663,29 @@ def profile():
         'black_win_rate': black_win_rate,
         'ranking': f'#{user_rank}',
         'recent_matches': recent_matches,
-        'weaknesses': weaknesses_text
+        # Use user-saved weaknesses if set, otherwise fall back to computed
+        'weaknesses': user.weaknesses if user.weaknesses else computed_weaknesses
     }
-    
+
     return render_template('profile.html', user=user, stats=user_stats, username=username)
+
+@main.route('/save_weaknesses', methods=['POST'])
+def save_weaknesses():
+    if 'username' not in session:
+        return redirect(url_for('main.login'))
+    user = User.query.filter_by(username=session['username']).first()
+    user.weaknesses = request.form.get('weaknesses', '').strip()
+    db.session.commit()
+    flash('Weaknesses saved!', 'success')
+    return redirect(url_for('main.profile'))
+
+@main.route('/lookup_user')
+def lookup_user():
+    username = request.args.get('username', '').strip()
+    if not username:
+        return jsonify({'found': False})
+    user = User.query.filter_by(username=username).first()
+    return jsonify({'found': bool(user)})
 
 @main.route('/viewstats')
 def viewstats():
@@ -973,21 +1004,24 @@ def leaderboard():
             if m.player == u.username:
                 if r == 'win': wins += 1
                 elif r == 'loss': losses += 1
-                else: draws += 1
+                elif r == 'draw': draws += 1
             else:
                 if r == 'loss': wins += 1
                 elif r == 'win': losses += 1
-                else: draws += 1
+                elif r == 'draw': draws += 1
         total = wins + losses + draws
+        win_rate = round((wins / total * 100) if total > 0 else 0, 1)
+        elo = 1200 + (wins * 10) + (win_rate * 2)
         players.append({
             'username': u.username,
             'wins': wins,
             'losses': losses,
             'draws': draws,
-            'win_rate': round((wins / total * 100) if total > 0 else 0, 1)
+            'win_rate': win_rate,
+            'elo': round(elo)
         })
 
-    players.sort(key=lambda x: (x['wins'], x['win_rate']), reverse=True)
+    players.sort(key=lambda x: x['elo'], reverse=True)
     return render_template('leaderboard.html', players=players, username=session['username'])
 
 @main.route('/h2h')
