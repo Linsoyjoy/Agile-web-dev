@@ -27,14 +27,17 @@
           <h5 class="card-title">Your Matches</h5>
           <div class="upcoming-matches">
             {% for match, tournament in matches[:5] %}
-              {% set is_upcoming = (match.result or '')|lower == 'pending' %}
-              {% set r = (match.result or '')|lower %}
+              {% set raw = (match.result or '')|lower %}
+              {% if match.opponent == username and raw == 'win' %}{% set r = 'loss' %}
+              {% elif match.opponent == username and raw == 'loss' %}{% set r = 'win' %}
+              {% else %}{% set r = raw %}{% endif %}
+              {% set is_upcoming = r == 'pending' %}
               <div class="match-item p-2 mb-2 border rounded">
                 <small class="text-muted">{{ match.date_played.strftime('%b %d, %Y') }}</small>
                 {% if tournament %}
                   <div class="fw-bold">{{ tournament.name }}</div>
                 {% endif %}
-                <div>{{ match.player }} vs {{ match.opponent }}</div>
+                <div>{{ username }} vs {{ match.opponent if match.player == username else match.player }}</div>
                 <div class="mt-1">
                   {% if is_upcoming %}
                     <span class="badge bg-warning text-dark">Upcoming</span>

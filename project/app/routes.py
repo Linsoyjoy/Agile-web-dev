@@ -572,11 +572,14 @@ def profile():
                 # Skip upcoming matches from stats calculation
                 continue
         
+        colour = match.player_colour if match.player == username else ('black' if match.player_colour.lower() == 'white' else 'white')
+
         # Add to recent matches
         recent_matches.append({
             'opponent': opponent,
             'result': user_result,
-            'date': match.date_played
+            'date': match.date_played,
+            'colour': colour.capitalize()
         })
     
     # Sort recent matches by date (most recent first) and take last 3
@@ -607,64 +610,58 @@ def profile():
     user_rankings.sort(key=lambda x: x[1], reverse=True)
     user_rank = next((i+1 for i, (u, _) in enumerate(user_rankings) if u == username), len(user_rankings))
     
-    # Calculate color-specific win rates
+    # Calculate colour-specific stats from the user's perspective
     white_wins = white_losses = white_draws = 0
     black_wins = black_losses = black_draws = 0
-    
+
     for match in user_matches:
-        if match.player_colour.lower() == 'white':
-            if match.result.lower() == 'win':
-                white_wins += 1
-            elif match.result.lower() == 'loss':
-                white_losses += 1
+        r = (match.result or '').lower()
+        if r == 'pending':
+            continue
+
+        if match.player == username:
+            colour = match.player_colour.lower()
+            result = r
+        else:
+            # Reverse colour and result when user is the opponent
+            colour = 'black' if match.player_colour.lower() == 'white' else 'white'
+            if r == 'win':
+                result = 'loss'
+            elif r == 'loss':
+                result = 'win'
             else:
-                white_draws += 1
-        else:  # black
-            if match.result.lower() == 'win':
-                black_wins += 1
-            elif match.result.lower() == 'loss':
-                black_losses += 1
-            else:
-                black_draws += 1
-    
+                result = 'draw'
+
+        if colour == 'white':
+            if result == 'win': white_wins += 1
+            elif result == 'loss': white_losses += 1
+            elif result == 'draw': white_draws += 1
+        else:
+            if result == 'win': black_wins += 1
+            elif result == 'loss': black_losses += 1
+            elif result == 'draw': black_draws += 1
+
     white_total = white_wins + white_losses + white_draws
     black_total = black_wins + black_losses + black_draws
     white_win_rate = round((white_wins / white_total * 100) if white_total > 0 else 0, 1)
     black_win_rate = round((black_wins / black_total * 100) if black_total > 0 else 0, 1)
     
-    # Analyze weaknesses based on performance data
-    weaknesses = []
-    if losses > wins * 1.5:
-        weaknesses.append("High loss rate - focus on defensive strategies")
-    if black_win_rate < white_win_rate - 10:
-        weaknesses.append("Struggles playing as black - study black opening strategies")
-    if white_win_rate < black_win_rate - 10:
-        weaknesses.append("Struggles playing as white - improve opening repertoire")
-    if total_games < 10:
-        weaknesses.append("Limited experience - play more games to improve")
-    
-    # Analyze termination patterns
-    timeouts = sum(1 for match in user_matches if match.termination and 'timeout' in match.termination.lower())
-    resignations = sum(1 for match in user_matches if match.termination and 'resign' in match.termination.lower())
-    
-    if timeouts > total_games * 0.3:
-        weaknesses.append("Frequent timeouts - improve time management")
-    if resignations > total_games * 0.4:
-        weaknesses.append("Early resignations - develop endgame skills")
-    
-    computed_weaknesses = "; ".join(weaknesses) if weaknesses else "Keep practicing to identify areas for improvement!"
-
     user_stats = {
         'wins': wins,
         'losses': losses,
         'draws': draws,
         'win_rate': win_rate,
+        'white_wins': white_wins,
+        'white_losses': white_losses,
+        'white_draws': white_draws,
         'white_win_rate': white_win_rate,
+        'black_wins': black_wins,
+        'black_losses': black_losses,
+        'black_draws': black_draws,
         'black_win_rate': black_win_rate,
         'ranking': f'#{user_rank}',
         'recent_matches': recent_matches,
-        # Use user-saved weaknesses if set, otherwise fall back to computed
-        'weaknesses': user.weaknesses if user.weaknesses else computed_weaknesses
+        'weaknesses': user.weaknesses or ''
     }
 
     return render_template('profile.html', user=user, stats=user_stats, username=username)
@@ -742,7 +739,9 @@ def viewstats():
         'ELO': 1200 + (wins * 10),
     }
 
-    my_matches = Match.query.filter_by(player=username).order_by(Match.date_played.desc()).all()
+    my_matches = Match.query.filter(
+        (Match.player == username) | (Match.opponent == username)
+    ).order_by(Match.date_played.desc()).all()
     return render_template('viewstats.html', username=username, user=user, stats=stats, matches=my_matches)
 
 @main.route('/calendar')
@@ -762,12 +761,21 @@ def calendar():
         events = []
         for match in all_matches:
             result_lower = (match.result or '').lower()
+
+            # Reverse result when user is the opponent, not the recording player
+            if match.opponent == username and result_lower == 'win':
+                user_result = 'loss'
+            elif match.opponent == username and result_lower == 'loss':
+                user_result = 'win'
+            else:
+                user_result = result_lower
+
             event_colour = '#6c757d'  # default gray for draw
-            if result_lower == 'pending':
+            if user_result == 'pending':
                 event_colour = '#ffc107'  # yellow for pending/upcoming
-            elif result_lower == 'win':
+            elif user_result == 'win':
                 event_colour = '#28a745'  # green for win
-            elif result_lower == 'loss':
+            elif user_result == 'loss':
                 event_colour = '#dc3545'  # red for loss
 
             tournament = None
@@ -779,14 +787,19 @@ def calendar():
 
             match_entries.append((match, tournament))
 
+            if match.player == username:
+                title = f"{match.player} vs {match.opponent}{tournament_name}"
+            else:
+                title = f"{match.opponent} vs {match.player}{tournament_name}"
+
             events.append({
-                'title': f"{match.player} vs {match.opponent}{tournament_name}",
+                'title': title,
                 'start': match.date_played.isoformat(),
                 'backgroundColor': event_colour,
                 'borderColor': event_colour,
                 'extendedProps': {
-                    'status': 'Upcoming' if result_lower == 'pending' else 'Completed',
-                    'result': (match.result or '').capitalize() or 'Unknown',
+                    'status': 'Upcoming' if user_result == 'pending' else 'Completed',
+                    'result': user_result.capitalize() or 'Unknown',
                     'colour': (match.player_colour or '').capitalize()
                 }
             })
