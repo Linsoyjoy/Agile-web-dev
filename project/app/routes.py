@@ -743,19 +743,46 @@ def viewstats():
     rankings.sort(key=lambda x: x[1], reverse=True)
     user_rank = next((i + 1 for i, (u, _) in enumerate(rankings) if u == username), len(rankings) or 1)
 
+    elo = round(1200 + (wins * 10) + (win_rate * 2))
+
     stats = {
         'wins': wins,
         'losses': losses,
         'draws': draws,
         'win_rate': win_rate,
         'ranking': f'#{user_rank}',
-        'ELO': 1200 + (wins * 10),
+        'ELO': elo,
     }
+
+    # Build ELO history: one data point per completed match in chronological order
+    sorted_matches = sorted(
+        [m for m in user_matches if (m.result or '').lower() in ('win', 'loss', 'draw')],
+        key=lambda m: m.date_played
+    )
+    c_wins = c_losses = c_draws = 0
+    elo_history = []
+    for m in sorted_matches:
+        r = (m.result or '').lower()
+        if m.player == username:
+            if r == 'win': c_wins += 1
+            elif r == 'loss': c_losses += 1
+            elif r == 'draw': c_draws += 1
+        else:
+            if r == 'loss': c_wins += 1
+            elif r == 'win': c_losses += 1
+            elif r == 'draw': c_draws += 1
+        c_total = c_wins + c_losses + c_draws
+        c_win_rate = (c_wins / c_total * 100) if c_total > 0 else 0
+        elo_history.append({
+            'date': m.date_played.strftime('%Y-%m-%d'),
+            'elo': round(1200 + (c_wins * 10) + (c_win_rate * 2))
+        })
 
     my_matches = Match.query.filter(
         (Match.player == username) | (Match.opponent == username)
     ).order_by(Match.date_played.desc()).all()
-    return render_template('viewstats.html', username=username, user=user, stats=stats, matches=my_matches)
+    return render_template('viewstats.html', username=username, user=user, stats=stats,
+                           matches=my_matches, elo_history=elo_history)
 
 @main.route('/calendar')
 def calendar():
