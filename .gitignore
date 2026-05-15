@@ -1,1 +1,6 @@
 project/database/users.db
+__pycache__
+application-env
+.vscode
+.env
+database
