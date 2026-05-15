@@ -3,3 +3,5 @@ application-env
 .vscode
 .env
 database
+.venv
+database/users.db

@@ -6,7 +6,7 @@ from werkzeug.utils import secure_filename
 
 from app import db, csrf
 from .blueprints import main
-from .models import User, Tournament, Match, Friendship, Query
+from .models import User, Tournament, Match, Friendship, Queries
 from .forgot_password import reset_password_email
 from datetime import date, datetime
 
