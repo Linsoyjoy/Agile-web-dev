@@ -3,3 +3,4 @@ application-env
 .vscode
 .env
 database
+.venv

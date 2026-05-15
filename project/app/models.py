@@ -7,6 +7,7 @@ class User(db.Model):
     password_hash = db.Column(db.String(256), nullable=False)
     profile_pic = db.Column(db.String(200), nullable=True)
     weaknesses = db.Column(db.Text, nullable=True)
+    is_admin = db.Column(db.Boolean, default=False)
 
 class Tournament(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -41,10 +42,11 @@ class Friendship(db.Model):
     # Ensure no duplicate friendships and prevent self-friendship
     __table_args__ = (db.UniqueConstraint('requester_id', 'addressee_id', name='unique_friendship'),)
 
-class Query(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(100))
+class Queries(db.Model):
+    id = db.Column(db.Integer, primary_key=True, unique=True)
+    email = db.Column(db.String(100), nullable = True)
     issue_type = db.Column(db.String(20), nullable=False, default='other')
     title = db.Column(db.String(100), nullable=False)
-    description = db.Column(db.String(1000))
+    description = db.Column(db.String(1000), nullable=True)
     priority = db.Column(db.String(20), nullable=False, default='none')
+    status = db.Column(db.String(20), nullable=False, default ='in progress') #in progress, completed, unresolved
