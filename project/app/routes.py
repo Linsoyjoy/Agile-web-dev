@@ -1,6 +1,5 @@
 import os
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session
-from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 
@@ -8,7 +7,7 @@ from app import db, csrf
 from .blueprints import main
 from .models import User, Tournament, Match, Friendship, Queries
 from .forgot_password import reset_password_email
-from datetime import date, datetime
+from datetime import datetime
 
 @main.context_processor
 def inject_profile_pic():
@@ -46,6 +45,7 @@ def home():
         return render_template('landing.html')
     
     username = session['username']
+    is_admin = User.username & User.is_admin
     
     # Get user's latest match (could be completed or upcoming)
     latest_match = Match.query.filter(

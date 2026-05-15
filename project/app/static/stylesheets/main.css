@@ -1,5 +1,7 @@
 body {
     background-color: #f5f7fa;
+    display: flex;
+    flex-direction: column;
 }
 
 .header {
@@ -138,6 +140,10 @@ body {
 
 .logo{
     width: 200px;
+}
+
+footer{
+    margin-top: auto;
 }
 
 .footer{
