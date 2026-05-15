@@ -18,19 +18,21 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
-          <form id="addFriendForm">
-            <div class="mb-3">
-              <label for="friendUsername" class="form-label">Enter Username</label>
-              <input type="text" class="form-control" id="friendUsername" name="friendUsername" 
-                     placeholder="Enter the username of the player you want to add" required>
-              <div class="form-text">Enter the exact username of the chess player you want to connect with.</div>
-            </div>
-            <div id="addFriendResult" class="alert" style="display: none;"></div>
-          </form>
+          <div class="mb-3 position-relative">
+            <label for="friendUsername" class="form-label">Search by username</label>
+            <input type="text" class="form-control" id="friendUsername" name="friendUsername"
+                   placeholder="Start typing a username..." autocomplete="off">
+            <ul id="searchResults" class="list-group position-absolute w-100 z-3" style="display:none; top:100%; max-height:220px; overflow-y:auto;"></ul>
+          </div>
+          <div id="selectedUser" style="display:none;">
+            <p class="mb-2">Selected: <strong id="selectedUsername"></strong></p>
+            <a id="viewProfileBtn" href="#" class="btn btn-sm btn-outline-primary me-2">View Profile</a>
+            <button type="button" class="btn btn-sm btn-success" id="sendRequestBtn">Send Friend Request</button>
+          </div>
+          <div id="addFriendResult" class="alert mt-2" style="display:none;"></div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-          <button type="button" class="btn btn-primary" id="submitAddFriend">Search for Player</button>
         </div>
       </div>
     </div>
@@ -148,84 +150,108 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const addFriendForm = document.getElementById('addFriendForm');
-    const submitBtn = document.getElementById('submitAddFriend');
+    const input = document.getElementById('friendUsername');
+    const resultsList = document.getElementById('searchResults');
+    const selectedDiv = document.getElementById('selectedUser');
+    const selectedUsernameEl = document.getElementById('selectedUsername');
+    const viewProfileBtn = document.getElementById('viewProfileBtn');
+    const sendRequestBtn = document.getElementById('sendRequestBtn');
     const resultDiv = document.getElementById('addFriendResult');
     const modal = document.getElementById('addFriendModal');
-    
-    submitBtn.addEventListener('click', function(e) {
-        e.preventDefault();
-        
-        const username = document.getElementById('friendUsername').value.trim();
-        
-        if (!username) {
-            showResult('Please enter a username!', 'danger');
+
+    let searchTimer = null;
+
+    // Live search as user types
+    input.addEventListener('input', function() {
+        const q = input.value.trim();
+        selectedDiv.style.display = 'none';
+        resultDiv.style.display = 'none';
+
+        if (!q) {
+            resultsList.style.display = 'none';
+            resultsList.innerHTML = '';
             return;
         }
-        
-        // Disable button and show loading
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Searching...';
-        
-        // Send AJAX request to add friend
-        fetch('/add_friend', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                friend_username: username
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                showResult(data.message, 'success');
-                // Clear form and close modal after success
-                setTimeout(() => {
-                    addFriendForm.reset();
-                    const bsModal = bootstrap.Modal.getInstance(modal);
-                    bsModal.hide();
-                    // Optionally refresh the page to show updated friends list
-                    if (data.redirect) {
-                        window.location.href = data.redirect;
+
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(function() {
+            fetch('/search_users?q=' + encodeURIComponent(q))
+                .then(r => r.json())
+                .then(users => {
+                    resultsList.innerHTML = '';
+                    if (users.length === 0) {
+                        resultsList.innerHTML = '<li class="list-group-item text-muted">No users found</li>';
+                    } else {
+                        users.forEach(function(username) {
+                            const li = document.createElement('li');
+                            li.className = 'list-group-item list-group-item-action';
+                            li.style.cursor = 'pointer';
+                            li.textContent = username;
+                            li.addEventListener('click', function() {
+                                selectUser(username);
+                            });
+                            resultsList.appendChild(li);
+                        });
                     }
+                    resultsList.style.display = 'block';
+                });
+        }, 300);
+    });
+
+    // Hide dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!input.contains(e.target) && !resultsList.contains(e.target)) {
+            resultsList.style.display = 'none';
+        }
+    });
+
+    function selectUser(username) {
+        input.value = username;
+        resultsList.style.display = 'none';
+        selectedUsernameEl.textContent = username;
+        viewProfileBtn.href = '/view_user/' + encodeURIComponent(username);
+        selectedDiv.style.display = 'block';
+        resultDiv.style.display = 'none';
+    }
+
+    // Send friend request for selected user
+    sendRequestBtn.addEventListener('click', function() {
+        const username = selectedUsernameEl.textContent;
+        fetch('/send_friend_request', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ target_username: username })
+        })
+        .then(r => r.json())
+        .then(data => {
+            showResult(data.message, data.success ? 'success' : 'danger');
+            if (data.success) {
+                setTimeout(function() {
+                    bootstrap.Modal.getInstance(modal).hide();
                 }, 1500);
-            } else {
-                showResult(data.message, 'danger');
             }
         })
-        .catch(error => {
-            console.error('Error:', error);
+        .catch(function() {
             showResult('An error occurred. Please try again.', 'danger');
-        })
-        .finally(() => {
-            // Re-enable button
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = 'Search for Player';
         });
     });
-    
+
     function showResult(message, type) {
-        resultDiv.className = `alert alert-${type}`;
+        resultDiv.className = 'alert alert-' + type + ' mt-2';
         resultDiv.textContent = message;
         resultDiv.style.display = 'block';
-        
-        // Hide result after 5 seconds if it's an error
-        if (type === 'danger') {
-            setTimeout(() => {
-                resultDiv.style.display = 'none';
-            }, 5000);
-        }
     }
-    
-    // Clear result when modal is hidden
-    modal.addEventListener('hidden.bs.modal', function () {
+
+    // Reset modal on close
+    modal.addEventListener('hidden.bs.modal', function() {
+        input.value = '';
+        resultsList.style.display = 'none';
+        resultsList.innerHTML = '';
+        selectedDiv.style.display = 'none';
         resultDiv.style.display = 'none';
-        addFriendForm.reset();
     });
-    
-    // Handle friend request responses
+
+    // Handle accept/decline friend requests
     document.addEventListener('click', function(e) {
         if (e.target.classList.contains('accept-request')) {
             handleFriendRequest(e.target.dataset.friendshipId, 'accept');
@@ -233,29 +259,22 @@ document.addEventListener('DOMContentLoaded', function() {
             handleFriendRequest(e.target.dataset.friendshipId, 'decline');
         }
     });
-    
+
     function handleFriendRequest(friendshipId, action) {
         fetch('/respond_friend_request', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                friendship_id: friendshipId,
-                action: action
-            })
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ friendship_id: friendshipId, action: action })
         })
-        .then(response => response.json())
+        .then(r => r.json())
         .then(data => {
             if (data.success) {
-                // Reload page to update the UI
                 location.reload();
             } else {
                 alert(data.message || 'An error occurred');
             }
         })
-        .catch(error => {
-            console.error('Error:', error);
+        .catch(function() {
             alert('An error occurred. Please try again.');
         });
     }

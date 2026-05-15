@@ -684,6 +684,19 @@ def lookup_user():
     user = User.query.filter_by(username=username).first()
     return jsonify({'found': bool(user)})
 
+@main.route('/search_users')
+def search_users():
+    q = request.args.get('q', '').strip()
+    if not q:
+        return jsonify([])
+    # Case-insensitive starts-with match, exclude self if logged in, limit to 8 results
+    query = User.query.filter(User.username.ilike(f'{q}%'))
+    if 'username' in session:
+        current_user = session['username']
+        query = query.filter(User.username != current_user)
+    results = query.limit(8).all()
+    return jsonify([u.username for u in results])
+
 @main.route('/viewstats')
 def viewstats():
     if 'username' not in session:
