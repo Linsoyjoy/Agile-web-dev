@@ -7,6 +7,7 @@ class User(db.Model):
     password_hash = db.Column(db.String(256), nullable=False)
     profile_pic = db.Column(db.String(200), nullable=True)
     weaknesses = db.Column(db.Text, nullable=True)
+    is_admin = db.Column(db.Boolean, default=False)
 
 class Tournament(db.Model):
     id = db.Column(db.Integer, primary_key=True)
