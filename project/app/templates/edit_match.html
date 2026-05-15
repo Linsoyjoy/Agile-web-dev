@@ -7,6 +7,7 @@
     <h2 class="mb-4">Edit Match Record</h2>
 
     <form method="POST" action="{{ url_for('main.edit_match', match_id=match.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <div class="row g-3">
 
         <div class="col-md-4">
