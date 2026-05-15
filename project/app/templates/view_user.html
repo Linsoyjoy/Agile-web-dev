@@ -50,7 +50,7 @@
         <div class="card-header d-flex justify-content-between align-items-center">
           <h5 class="mb-0">Recent Matches</h5>
           {% if user.username != current_user %}
-            <a href="{{ url_for('main.h2h', opponent=user.username) }}" class="btn btn-info btn-sm">📊 Head-to-Head</a>
+            <a href="{{ url_for('main.h2h', opponent=user.username) }}" class="btn btn-info btn-sm">Head-to-Head</a>
           {% endif %}
         </div>
         <div class="card-body">
@@ -97,25 +97,25 @@
           <h5>Friend Actions</h5>
           <div class="d-grid gap-2 mb-3">
             {% if friendship_status == 'not_friends' %}
-              <button class="btn btn-success send-friend-request" data-username="{{ user.username }}">👥 Send Friend Request</button>
+              <button class="btn btn-success send-friend-request" data-username="{{ user.username }}">Send Friend Request</button>
             {% elif friendship_status == 'request_sent' %}
-              <button class="btn btn-warning" disabled>📤 Friend Request Sent</button>
+              <button class="btn btn-warning" disabled>Friend Request Sent</button>
             {% elif friendship_status == 'request_received' %}
               <div class="d-grid gap-2">
-                <button class="btn btn-success accept-friend-request" data-friendship-id="{{ friendship.id }}">✅ Accept Friend Request</button>
+                <button class="btn btn-success accept-friend-request" data-friendship-id="{{ friendship.id }}">Accept Friend Request</button>
                 <button class="btn btn-outline-danger decline-friend-request" data-friendship-id="{{ friendship.id }}">❌ Decline Friend Request</button>
               </div>
             {% elif friendship_status == 'friends' %}
               <div class="d-grid gap-2">
-                <button class="btn btn-success" disabled>✅ Friends</button>
-                <button class="btn btn-outline-danger remove-friend" data-username="{{ user.username }}">🗑️ Remove Friend</button>
+                <button class="btn btn-success" disabled>Friends</button>
+                <button class="btn btn-outline-danger remove-friend" data-username="{{ user.username }}">Remove Friend</button>
               </div>
             {% endif %}
           </div>
           <h5>Match Actions</h5>
           <div class="d-grid gap-2">
-            <a href="{{ url_for('main.new_record') }}?opponent={{ user.username }}" class="btn btn-primary">🎮 Record Match vs {{ user.username }}</a>
-            <a href="{{ url_for('main.h2h', opponent=user.username) }}" class="btn btn-info">📊 View Head-to-Head Stats</a>
+            <a href="{{ url_for('main.new_record') }}?opponent={{ user.username }}" class="btn btn-primary">Record Match vs {{ user.username }}</a>
+            <a href="{{ url_for('main.h2h', opponent=user.username) }}" class="btn btn-info">View Head-to-Head Stats</a>
           </div>
         </div>
       </div>
