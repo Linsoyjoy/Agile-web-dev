@@ -996,13 +996,15 @@ def query():
         return redirect(url_for('main.login'))
     
     if request.method == 'POST':
+        email = request.form.get('email', '')
         issue_type = request.form['issue_type']
         title = request.form['title']
         description = request.form['description']
-        email = request.form.get('email', '')
         
-        # TODO: Store issue in database or send email
-        # For now, just show success message
+        #Create a new query and store in database
+        new_query = Queries(email=email, issue_type=issue_type, title=title, description=description)
+        db.session.add(new_query)
+        db.session.commit()
         flash(f'Issue "{title}" has been submitted successfully! We will review it and get back to you soon.', 'success')
         return redirect(url_for('main.query'))
 

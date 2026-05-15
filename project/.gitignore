@@ -4,4 +4,3 @@ application-env
 .env
 database
 .venv
-database/users.db
