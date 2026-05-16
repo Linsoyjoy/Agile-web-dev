@@ -8,6 +8,11 @@ class User(db.Model):
     profile_pic = db.Column(db.String(200), nullable=True)
     weaknesses = db.Column(db.Text, nullable=True)
     is_admin = db.Column(db.Boolean, default=False)
+    lichess_username = db.Column(db.String(100), nullable=True)
+    chesscom_username = db.Column(db.String(100), nullable=True)
+    lichess_rating = db.Column(db.Integer, nullable=True)
+    chesscom_rating = db.Column(db.Integer, nullable=True)
+    ratings_last_updated = db.Column(db.DateTime, nullable=True)
 
 class Tournament(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -50,3 +55,4 @@ class Queries(db.Model):
     description = db.Column(db.String(1000), nullable=True)
     priority = db.Column(db.String(20), nullable=False, default='none')
     status = db.Column(db.String(20), nullable=False, default ='in progress') #in progress, completed, unresolved
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)

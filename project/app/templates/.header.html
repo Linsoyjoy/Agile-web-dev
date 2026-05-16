@@ -35,7 +35,7 @@
                   {{ session.username[0].upper() }}
                 </div>
               {% endif %}
-              {{ session.username }}
+            {{ session.username }}
             </a>
             <ul class="dropdown-menu dropdown-menu-end">
               <li><a class="dropdown-item" href="{{ url_for('main.home') }}"><i class="bi bi-house me-2"></i>Home</a></li>
@@ -45,7 +45,11 @@
               <li><a class="dropdown-item" href="{{ url_for('main.calendar') }}"><i class="bi bi-calendar3 me-2"></i>Calendar</a></li>
               <li><a class="dropdown-item" href="{{ url_for('main.leaderboard') }}"><i class="bi bi-trophy me-2"></i>Leaderboard</a></li>
               <li><a class="dropdown-item" href="{{ url_for('main.h2h') }}"><i class="bi bi-arrow-left-right me-2"></i>Head-to-Head</a></li>
-              <li><a class="dropdown-item" href="{{ url_for('main.query') }}"><i class="bi bi-bug me-2"></i>Submit Issue</a></li>
+              <li><hr class="dropdown-divider"></li>
+              {% if user.is_admin %}
+                <li><a class="dropdown-item" href="{{ url_for('main.admin_dashboard') }}"><i class="bi bi-house me-2"></i>Admin dashboard</a></li>
+                <li><a class="dropdown-item" href="{{ url_for('main.view_queries') }}"><i class="bi bi-bar-chart me-2"></i>View queries</a></li>
+              {% endif %}
               <li><hr class="dropdown-divider"></li>
               <li>
                 <button class="dropdown-item" onclick="toggleTheme()">

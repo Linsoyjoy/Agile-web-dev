@@ -36,25 +36,20 @@
     </div>
   </div>
 
-  <div class="row mt-4">
-    <div class="col-lg-6 mb-4">
-      <div class="card stat-card p-4">
-        <h5>Last 30 Days ELO</h5>
-        <div class="graph-placeholder mt-3">
-          📈 Last 30 Days ELO Graph<br>
-          <small>(Line chart will go here)</small>
-        </div>
+  <div class="card stat-card mt-4 p-4">
+    <div class="d-flex justify-content-between align-items-start mb-3 flex-wrap gap-2">
+      <div>
+        <h5 class="mb-0">ELO Rating</h5>
+        <div id="eloCurrentValue" class="fw-bold mt-1" style="font-size:2rem;line-height:1.1;"></div>
+        <small id="eloSubtext" class="text-muted"></small>
+      </div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-sm btn-primary elo-filter" data-period="30">30D</button>
+        <button class="btn btn-sm btn-outline-primary elo-filter" data-period="all">ALL</button>
       </div>
     </div>
-    <div class="col-lg-6 mb-4">
-      <div class="card stat-card p-4">
-        <h5>All Time ELO</h5>
-        <div class="graph-placeholder mt-3">
-          📈 All Time ELO Graph<br>
-          <small>(Line chart will go here)</small>
-        </div>
-      </div>
-    </div>
+    <p id="eloEmptyMsg" class="text-muted d-none mb-0">No completed matches in this period.</p>
+    <svg id="eloChart" viewBox="0 0 500 150" style="width:100%;display:block;"></svg>
   </div>
 
   <div class="card stat-card mt-5 p-4">
@@ -69,11 +64,6 @@
     </div>
     <small class="text-muted mt-3 d-block">These buttons are not clickable yet</small>
   </div>
-
-  <!-- <div class="mt-5 mb-5">
-    <button class="btn btn-warning btn-custom">View Full Detailed Stats</button>
-    <button class="btn btn-secondary btn-custom">Export Stats</button>
-  </div> -->
 
   <div class="card card-ui mt-4 p-3">
     <div class="d-flex justify-content-between align-items-center mb-3">
@@ -130,6 +120,7 @@
               <form method="POST" action="{{ url_for('main.delete_match', match_id=m.id) }}" class="d-inline"
                     onsubmit="return confirm('Delete this match?')">
                 <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               </form>
               {% endif %}
             </td>
@@ -144,4 +135,157 @@
   </div>
 </div>
 {% include '.footer.html' %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // ELO data from the server, sorted oldest to newest
+  const eloHistory = {{ elo_history | tojson }};
+
+  const W = 500, H = 150;
+  const PAD = { t: 20, b: 28, l: 10, r: 10 };
+
+  // Build a smooth cubic bezier path through a set of [x, y] points
+  function makePath(pts) {
+    if (!pts.length) return '';
+    if (pts.length === 1) return `M${pts[0][0]},${pts[0][1]}`;
+    let d = `M${pts[0][0]},${pts[0][1]}`;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const x0 = i > 0 ? pts[i-1][0] : pts[i][0];
+      const y0 = i > 0 ? pts[i-1][1] : pts[i][1];
+      const x1 = pts[i][0],   y1 = pts[i][1];
+      const x2 = pts[i+1][0], y2 = pts[i+1][1];
+      const x3 = i < pts.length-2 ? pts[i+2][0] : pts[i+1][0];
+      const y3 = i < pts.length-2 ? pts[i+2][1] : pts[i+1][1];
+      const cp1x = x1 + (x2 - x0) / 5, cp1y = y1 + (y2 - y0) / 5;
+      const cp2x = x2 - (x3 - x1) / 5, cp2y = y2 - (y3 - y1) / 5;
+      d += ` C${cp1x.toFixed(1)},${cp1y.toFixed(1)},${cp2x.toFixed(1)},${cp2y.toFixed(1)},${x2},${y2}`;
+    }
+    return d;
+  }
+
+  // Draw the SVG chart for a given dataset, or show the empty message
+  function renderChart(data) {
+    const svg      = document.getElementById('eloChart');
+    const emptyMsg = document.getElementById('eloEmptyMsg');
+    const valEl    = document.getElementById('eloCurrentValue');
+    const subEl    = document.getElementById('eloSubtext');
+
+    if (!data.length) {
+      svg.style.display = 'none';
+      emptyMsg.classList.remove('d-none');
+      valEl.textContent = '—';
+      subEl.textContent = 'No matches in this period';
+      return;
+    }
+
+    svg.style.display = 'block';
+    emptyMsg.classList.add('d-none');
+
+    const latest = data[data.length - 1];
+    const change = data.length > 1 ? latest.elo - data[0].elo : 0;
+    valEl.textContent = latest.elo;
+    valEl.style.color = change >= 0 ? '#198754' : '#dc3545';
+    subEl.textContent = `${change >= 0 ? '+' : ''}${change} since ${data[0].date} · ${data.length} match${data.length !== 1 ? 'es' : ''}`;
+
+    const cW = W - PAD.l - PAD.r;
+    const cH = H - PAD.t - PAD.b;
+    const vals = data.map(p => p.elo);
+    const minV = Math.min(...vals), maxV = Math.max(...vals);
+    const range = maxV - minV || 1;
+
+    const xS = i => PAD.l + (data.length < 2 ? cW / 2 : i / (data.length - 1) * cW);
+    const yS = v => PAD.t + cH - (v - minV) / range * cH;
+    const coords   = data.map((p, i) => [xS(i), yS(p.elo)]);
+    const linePath = makePath(coords);
+    const [lx, ly] = coords[coords.length - 1];
+
+    svg.innerHTML = `
+      <defs>
+        <linearGradient id="eloGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%"   stop-color="#0d6efd" stop-opacity="0.28"/>
+          <stop offset="100%" stop-color="#0d6efd" stop-opacity="0.02"/>
+        </linearGradient>
+        <filter id="eloGlow" x="-20%" y="-20%" width="140%" height="140%">
+          <feGaussianBlur stdDeviation="2.5" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+      <path d="${linePath} L${lx},${H-PAD.b} L${coords[0][0]},${H-PAD.b} Z" fill="url(#eloGrad)"/>
+      <path d="${linePath}" fill="none" stroke="#0d6efd" stroke-width="2.5" stroke-linecap="round" filter="url(#eloGlow)"/>
+      <circle cx="${lx}" cy="${ly}" r="7" fill="#0d6efd" opacity="0.25" filter="url(#eloGlow)"/>
+      <circle cx="${lx}" cy="${ly}" r="4" fill="#0d6efd"/>
+      <circle cx="${lx}" cy="${ly}" r="2" fill="#fff"/>
+      <text x="${PAD.l}"   y="${H-6}" font-size="9" fill="#6c757d" text-anchor="start">${data[0].date}</text>
+      <text x="${W-PAD.r}" y="${H-6}" font-size="9" fill="#6c757d" text-anchor="end">${latest.date}</text>
+      ${coords.map(([cx, cy], i) => `
+        <circle cx="${cx}" cy="${cy}" r="5" fill="transparent"
+          data-date="${data[i].date}" data-elo="${data[i].elo}"
+          class="elo-point" style="cursor:pointer"/>
+      `).join('')}
+      <!-- Tooltip (hidden by default) -->
+      <g id="eloTooltip" style="display:none">
+        <rect id="eloTipBox" rx="4" ry="4" fill="#212529" opacity="0.88"/>
+        <text id="eloTipText1" font-size="9" font-weight="bold" fill="#fff"></text>
+        <text id="eloTipText2" font-size="8" fill="#adb5bd"></text>
+      </g>
+    `;
+
+    // Show tooltip on hover over each invisible hit-target circle
+    svg.querySelectorAll('.elo-point').forEach(pt => {
+      pt.addEventListener('mouseenter', function () {
+        const px = parseFloat(this.getAttribute('cx'));
+        const py = parseFloat(this.getAttribute('cy'));
+        const elo  = this.dataset.elo;
+        const date = this.dataset.date;
+
+        const tip   = document.getElementById('eloTooltip');
+        const box   = document.getElementById('eloTipBox');
+        const line1 = document.getElementById('eloTipText1');
+        const line2 = document.getElementById('eloTipText2');
+
+        line1.textContent = `ELO: ${elo}`;
+        line2.textContent = date;
+
+        // Position tooltip above the point, clamped to SVG bounds
+        const tw = 72, th = 30;
+        const tx = Math.min(Math.max(px - tw / 2, PAD.l), W - PAD.r - tw);
+        const ty = Math.max(py - th - 6, 2);
+
+        box.setAttribute('x', tx); box.setAttribute('y', ty);
+        box.setAttribute('width', tw); box.setAttribute('height', th);
+        line1.setAttribute('x', tx + tw / 2); line1.setAttribute('y', ty + 11);
+        line1.setAttribute('text-anchor', 'middle');
+        line2.setAttribute('x', tx + tw / 2); line2.setAttribute('y', ty + 22);
+        line2.setAttribute('text-anchor', 'middle');
+
+        tip.style.display = 'block';
+      });
+      pt.addEventListener('mouseleave', () => {
+        document.getElementById('eloTooltip').style.display = 'none';
+      });
+    });
+  }
+
+  // Filter ELO history to a given time period (e.g. last 30 days or all time)
+  function filterData(period) {
+    if (period === 'all') return eloHistory;
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - parseInt(period));
+    return eloHistory.filter(p => new Date(p.date) >= cutoff);
+  }
+
+  // Switch period on button click
+  document.querySelectorAll('.elo-filter').forEach(btn => {
+    btn.addEventListener('click', function () {
+      document.querySelectorAll('.elo-filter').forEach(b => {
+        b.classList.replace('btn-primary', 'btn-outline-primary');
+      });
+      this.classList.replace('btn-outline-primary', 'btn-primary');
+      renderChart(filterData(this.dataset.period));
+    });
+  });
+
+  renderChart(filterData('30'));
+</script>
 {% endblock %}
