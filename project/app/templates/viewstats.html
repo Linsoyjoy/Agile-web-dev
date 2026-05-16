@@ -54,15 +54,126 @@
 
   <div class="card stat-card mt-5 p-4">
     <h5 class="mb-4">Advanced Metrics</h5>
-    <div class="d-flex flex-wrap gap-3">
-      <button class="btn btn-outline-primary btn-custom" disabled>Accuracy</button>
-      <button class="btn btn-outline-primary btn-custom" disabled>Blunders per Game</button>
-      <button class="btn btn-outline-primary btn-custom" disabled>Average Move Time</button>
-      <button class="btn btn-outline-primary btn-custom" disabled>Opening Performance</button>
-      <button class="btn btn-outline-primary btn-custom" disabled>Endgame Strength</button>
-      <button class="btn btn-outline-primary btn-custom" disabled>Tactical Vision</button>
+    <div class="row g-3">
+
+      <!-- White vs Black -->
+      <div class="col-md-4">
+        <div class="card p-3 h-100">
+          <h6 class="mb-3">Colour Performance</h6>
+          {% for col in ['white', 'black'] %}
+          {% set cs = colour_stats[col] %}
+          {% set total = cs.win + cs.loss + cs.draw %}
+          <div class="mb-2">
+            <div class="d-flex justify-content-between small mb-1">
+              <span class="text-capitalize fw-semibold">{{ col }}</span>
+              <span class="text-muted">{{ cs.win }}W {{ cs.loss }}L {{ cs.draw }}D</span>
+            </div>
+            {% if total > 0 %}
+            <div class="progress" style="height:8px;">
+              <div class="progress-bar bg-success" style="width:{{ (cs.win/total*100)|round }}%"></div>
+              <div class="progress-bar bg-secondary" style="width:{{ (cs.draw/total*100)|round }}%"></div>
+              <div class="progress-bar bg-danger" style="width:{{ (cs.loss/total*100)|round }}%"></div>
+            </div>
+            {% else %}
+            <div class="text-muted small">No games</div>
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Termination breakdown -->
+      <div class="col-md-4">
+        <div class="card p-3 h-100">
+          <h6 class="mb-3">How Games End</h6>
+          {% if top_terminations %}
+            {% set total_t = top_terminations | sum(attribute=1) %}
+            {% for name, count in top_terminations %}
+            <div class="mb-2">
+              <div class="d-flex justify-content-between small mb-1">
+                <span class="text-capitalize">{{ name }}</span>
+                <span class="text-muted">{{ count }}</span>
+              </div>
+              <div class="progress" style="height:6px;">
+                <div class="progress-bar bg-primary" style="width:{{ (count/total_t*100)|round }}%"></div>
+              </div>
+            </div>
+            {% endfor %}
+          {% else %}
+            <p class="text-muted small mb-0">No data yet</p>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Streaks -->
+      <div class="col-md-4">
+        <div class="card p-3 h-100">
+          <h6 class="mb-3">Streaks</h6>
+          <div class="mb-3">
+            <div class="small text-muted mb-1">Current streak</div>
+            {% if current_streak > 0 %}
+            <span class="fs-4 fw-bold text-{{ 'success' if streak_type == 'win' else 'danger' if streak_type == 'loss' else 'secondary' }}">
+              {{ current_streak }}
+            </span>
+            <span class="small text-muted ms-1 text-capitalize">{{ streak_type }}{{ 's' if current_streak != 1 }}</span>
+            {% else %}
+            <span class="text-muted small">No matches yet</span>
+            {% endif %}
+          </div>
+          <div>
+            <div class="small text-muted mb-1">Best win streak</div>
+            <span class="fs-4 fw-bold text-success">{{ best_win_streak }}</span>
+          </div>
+        </div>
+      </div>
+
     </div>
-    <small class="text-muted mt-3 d-block">These buttons are not clickable yet</small>
+      <!-- Opening performance -->
+      <div class="col-12 mt-2">
+        <div class="card p-3">
+          <h6 class="mb-3">Opening Performance</h6>
+          {% if opening_list %}
+          <div class="table-responsive">
+            <table class="table table-sm mb-0">
+              <thead>
+                <tr>
+                  <th>Opening</th>
+                  <th class="text-center">Games</th>
+                  <th class="text-center text-success">W</th>
+                  <th class="text-center text-danger">L</th>
+                  <th class="text-center">D</th>
+                  <th>Win rate</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for o in opening_list %}
+                {% set wr = (o.win / o.total * 100) | round | int %}
+                <tr>
+                  <td>{{ o.name }}</td>
+                  <td class="text-center">{{ o.total }}</td>
+                  <td class="text-center text-success">{{ o.win }}</td>
+                  <td class="text-center text-danger">{{ o.loss }}</td>
+                  <td class="text-center">{{ o.draw }}</td>
+                  <td style="min-width:120px;">
+                    <div class="d-flex align-items-center gap-2">
+                      <div class="progress flex-grow-1" style="height:6px;">
+                        <div class="progress-bar bg-success" style="width:{{ wr }}%"></div>
+                      </div>
+                      <small class="text-muted">{{ wr }}%</small>
+                    </div>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <p class="text-muted small mb-0">Record some matches to see opening stats.</p>
+          {% endif %}
+        </div>
+      </div>
+
+    </div>
   </div>
 
   <div class="card card-ui mt-4 p-3">
