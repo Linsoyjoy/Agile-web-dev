@@ -11,15 +11,19 @@
 
 <body>
     <div class = "alt-display">
+
+        <!-- Side image — decorative splash panel on the left -->
         <div class="login-img">
             <img src="{{ url_for('static', filename='images/signup.jpg') }}" alt="Sign up page splash image">
         </div>
+
+        <!-- Sign-up box — collects username, email and password with confirmation -->
         <div class="container" style="align-content: center;">
             <div class="sign-up-box">
                 <h1 class="heading"><b>Join Chessmate!</b></h1>
                 <p>Create your account to start tracking your chess journey!</p>
-                
-                <!-- Flash messages -->
+
+                <!-- Flash messages — validation errors or success notices from the route -->
                 {% with messages = get_flashed_messages(with_categories=true) %}
                     {% if messages %}
                         {% for category, message in messages %}
@@ -29,7 +33,7 @@
                         {% endfor %}
                     {% endif %}
                 {% endwith %}
-                
+
                 <form method="POST" action="/signup">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <input type="text" class="form-control form-control-lg" id="username" name="username" placeholder="Username" style="margin-bottom: 10px;" required>
@@ -39,8 +43,9 @@
                     <button type="submit" class="btn btn-secondary btn-lg btn-block">Sign Up</button>
                 </form>
             </div>
-<p class="sign-up">Already have an account? <a href="/login"><b>Log in</b></a></p>
+            <p class="sign-up">Already have an account? <a href="/login"><b>Log in</b></a></p>
         </div>
+
     </div>
 </body>
 </html>

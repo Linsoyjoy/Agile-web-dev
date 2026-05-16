@@ -4,6 +4,8 @@
 {% block content %}
 <div class="container mt-5">
   <div class="row">
+
+    <!-- Left column — avatar, win/loss/draw counts, ELO and ranking -->
     <div class="col-md-4">
       <div class="card text-center">
         <div class="card-body">
@@ -13,6 +15,7 @@
             {% if profile_pic %}
               <img src="{{ url_for('static', filename='images/profiles/' + profile_pic) }}" alt="Profile" class="rounded-circle" width="100" height="100">
             {% else %}
+              <!-- Fallback initial avatar when no profile picture is uploaded -->
               <div class="rounded-circle bg-secondary d-inline-block" style="width: 100px; height: 100px; line-height: 100px; color: white; font-size: 2rem;">
                 {{ user.username[0]|upper }}
               </div>
@@ -34,7 +37,8 @@
           </div>
         </div>
       </div>
-      
+
+      <!-- ELO, win rate and global ranking -->
       <div class="card mt-3">
         <div class="card-body">
           <h5>Performance Stats</h5>
@@ -44,8 +48,11 @@
         </div>
       </div>
     </div>
-    
+
+    <!-- Right column — recent matches table and friend/match action buttons -->
     <div class="col-md-8">
+
+      <!-- Recent matches — up to 5 completed games from this user's perspective -->
       <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
           <h5 class="mb-0">Recent Matches</h5>
@@ -71,11 +78,13 @@
                     <td>{{ match.date.strftime('%b %d, %Y') if match.date else '—' }}</td>
                     <td>{{ match.opponent }}</td>
                     <td>
+                      <!-- Colour-coded result badge -->
                       <span class="badge bg-{{ 'success' if match.result == 'Win' else 'danger' if match.result == 'Loss' else 'secondary' }}">
                         {{ match.result }}
                       </span>
                     </td>
                     <td>
+                      <!-- Light badge for white, dark badge for black -->
                       <span class="badge bg-{{ 'light' if match.colour == 'white' else 'dark' }} text-{{ 'dark' if match.colour == 'white' else 'light' }}">
                         {{ match.colour|capitalize }}
                       </span>
@@ -90,11 +99,13 @@
           {% endif %}
         </div>
       </div>
-      
+
+      <!-- Friend and match actions — only shown when viewing someone else's profile -->
       {% if user.username != current_user %}
       <div class="card mt-3">
         <div class="card-body">
           <h5>Friend Actions</h5>
+          <!-- Button state reflects current friendship status -->
           <div class="d-grid gap-2 mb-3">
             {% if friendship_status == 'not_friends' %}
               <button class="btn btn-success send-friend-request" data-username="{{ user.username }}">Send Friend Request</button>
@@ -120,9 +131,10 @@
         </div>
       </div>
       {% endif %}
+
     </div>
   </div>
-  
+
   <div class="mt-3">
     <a href="{{ url_for('main.friends') }}" class="btn btn-secondary">← Back to Friends</a>
   </div>
@@ -130,7 +142,7 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Handle send friend request
+    // Handle send friend request - Delegate all friend action button clicks to the appropriate handler
     document.addEventListener('click', function(e) {
         if (e.target.classList.contains('send-friend-request')) {
             sendFriendRequest(e.target.dataset.username);
@@ -142,7 +154,8 @@ document.addEventListener('DOMContentLoaded', function() {
             removeFriend(e.target.dataset.username);
         }
     });
-    
+
+    // POST a new friend request and reload on success
     function sendFriendRequest(username) {
         fetch('/send_friend_request', {
             method: 'POST',
@@ -167,6 +180,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
+    // POST accept or decline for an incoming friend request and reload on success
     function respondToFriendRequest(friendshipId, action) {
         fetch('/respond_friend_request', {
             method: 'POST',
@@ -192,6 +206,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
+    // Confirm then POST to remove an accepted friendship
     function removeFriend(username) {
         if (confirm('Are you sure you want to remove this friend?')) {
             fetch('/remove_friend', {
