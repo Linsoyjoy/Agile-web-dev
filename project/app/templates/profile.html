@@ -74,6 +74,36 @@
     </form>
   </div>
 
+  <div class="card mt-4 p-3">
+    <h5>Connected Accounts</h5>
+    <form method="POST" action="{{ url_for('main.save_platforms') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="mb-3">
+        <label class="form-label fw-semibold">
+          <img src="https://www.chess.com/favicon.ico" width="16" height="16" class="me-1" alt=""> Chess.com username
+        </label>
+        <input type="text" class="form-control" name="chesscom_username"
+               value="{{ user.chesscom_username or '' }}" placeholder="e.g. hikaru">
+        <div id="chesscom-ratings" class="mt-1 text-muted small"></div>
+      </div>
+      <div class="mb-3">
+        <label class="form-label fw-semibold">
+          <img src="https://lichess.org/favicon.ico" width="16" height="16" class="me-1" alt=""> Lichess username
+        </label>
+        <input type="text" class="form-control" name="lichess_username"
+               value="{{ user.lichess_username or '' }}" placeholder="e.g. DrNykterstein">
+        <div id="lichess-ratings" class="mt-1 text-muted small"></div>
+      </div>
+      <div class="mb-3">
+        <label class="form-label fw-semibold">FIDE ID</label>
+        <input type="text" class="form-control" name="fide_id"
+               value="{{ user.fide_id or '' }}" placeholder="e.g. 1503014">
+        <div id="fide-link" class="mt-1 small"></div>
+      </div>
+      <button type="submit" class="btn btn-sm btn-primary">Save</button>
+    </form>
+  </div>
+
 </div>
 {% include '.footer.html' %}
 {% endblock %}
@@ -120,6 +150,38 @@
   function findSimilarOpponents() {
     window.location.href = '/leaderboard';
   }
+
+  function formatRatings(data) {
+    const parts = [];
+    if (data.rapid)  parts.push(`Rapid: ${data.rapid}`);
+    if (data.blitz)  parts.push(`Blitz: ${data.blitz}`);
+    if (data.bullet) parts.push(`Bullet: ${data.bullet}`);
+    return parts.length ? parts.join(' · ') : 'No rated games found';
+  }
+
+  fetch('/fetch_ratings')
+    .then(r => r.json())
+    .then(data => {
+      if (data.chesscom) {
+        const el = document.getElementById('chesscom-ratings');
+        el.textContent = data.chesscom.error
+          ? 'Could not fetch ratings — check username'
+          : formatRatings(data.chesscom);
+        if (!data.chesscom.error) el.classList.replace('text-muted', 'text-success');
+      }
+      if (data.lichess) {
+        const el = document.getElementById('lichess-ratings');
+        el.textContent = data.lichess.error
+          ? 'Could not fetch ratings — check username'
+          : formatRatings(data.lichess);
+        if (!data.lichess.error) el.classList.replace('text-muted', 'text-success');
+      }
+      if (data.fide) {
+        const el = document.getElementById('fide-link');
+        el.innerHTML = `<a href="https://ratings.fide.com/profile/${data.fide.id}" target="_blank" rel="noopener">View FIDE profile →</a>`;
+      }
+    })
+    .catch(() => {});
 
   </script>
 {% endblock %}

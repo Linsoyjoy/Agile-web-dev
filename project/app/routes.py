@@ -1,4 +1,6 @@
+import json
 import os
+import urllib.request
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
@@ -632,6 +634,67 @@ def save_weaknesses():
     db.session.commit()
     flash('Weaknesses saved!', 'success')
     return redirect(url_for('main.profile'))
+
+
+# Save the user's linked external chess platform usernames
+@main.route('/save_platforms', methods=['POST'])
+def save_platforms():
+    if 'username' not in session:
+        return redirect(url_for('main.login'))
+    user = User.query.filter_by(username=session['username']).first()
+    user.chesscom_username = request.form.get('chesscom_username', '').strip() or None
+    user.lichess_username = request.form.get('lichess_username', '').strip() or None
+    user.fide_id = request.form.get('fide_id', '').strip() or None
+    db.session.commit()
+    flash('Platform accounts updated!', 'success')
+    return redirect(url_for('main.profile'))
+
+
+# AJAX — fetch live ratings from chess.com and lichess for the logged-in user
+@main.route('/fetch_ratings')
+@csrf.exempt
+def fetch_ratings():
+    if 'username' not in session:
+        return jsonify({'error': 'Not logged in'}), 401
+
+    user = User.query.filter_by(username=session['username']).first()
+    ratings = {}
+
+    if user.chesscom_username:
+        try:
+            url = f'https://api.chess.com/pub/player/{user.chesscom_username}/stats'
+            req = urllib.request.Request(url, headers={'User-Agent': 'ChessMate/1.0'})
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                data = json.loads(resp.read())
+            ratings['chesscom'] = {
+                'username': user.chesscom_username,
+                'rapid': data.get('chess_rapid', {}).get('last', {}).get('rating'),
+                'blitz': data.get('chess_blitz', {}).get('last', {}).get('rating'),
+                'bullet': data.get('chess_bullet', {}).get('last', {}).get('rating'),
+            }
+        except Exception:
+            ratings['chesscom'] = {'username': user.chesscom_username, 'error': True}
+
+    if user.lichess_username:
+        try:
+            url = f'https://lichess.org/api/user/{user.lichess_username}'
+            req = urllib.request.Request(url, headers={'User-Agent': 'ChessMate/1.0'})
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                data = json.loads(resp.read())
+            perfs = data.get('perfs', {})
+            ratings['lichess'] = {
+                'username': user.lichess_username,
+                'rapid': perfs.get('rapid', {}).get('rating'),
+                'blitz': perfs.get('blitz', {}).get('rating'),
+                'bullet': perfs.get('bullet', {}).get('rating'),
+            }
+        except Exception:
+            ratings['lichess'] = {'username': user.lichess_username, 'error': True}
+
+    if user.fide_id:
+        ratings['fide'] = {'id': user.fide_id}
+
+    return jsonify(ratings)
 
 
 # AJAX — exact username lookup used by the new record form to check if an opponent is on ChessMate
