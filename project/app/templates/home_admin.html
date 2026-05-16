@@ -5,23 +5,42 @@
 <div class="container mt-5">
   <div class="hero">
     <h1>Hello, {{ username }}!</h1>
-    <h4>Check out all the latest queries that were sent!</h4>
+    <h4>You have {{new_count}} new queries.</h4>
+    <!--New query categories-->
+    <div class="row text-center mt-5">
+      <div class="col-3">
+        <h5>{{bug}}</h5>
+        <small>Bug reports</small>
+      </div>
+      <div class="col-3">
+        <h5 >{{feature}}</h5>
+        <small">Feature requests</small>
+      </div>
+      <div class="col-3">
+        <h5>{{question}}</h5>
+        <small>Questions</small>
+      </div>
+      <div class="col-3">
+        <h5>{{other}}</h5>
+        <small>Others</small>
+      </div>
+    </div>
   </div>
 
-  <!-- Query status summary — counts of unresolved, in-progress and completed tickets -->
+  <!--Current progress-->
   <div class="card p-3 mt-4">
     <h4>Quick Stats</h4>
     <div class="row text-center">
       <div class="col-4">
-        <h5 class="text-danger">{{unresolved|length}}</h5>
+        <h5 class="text-danger">{{new}}</h5>
         <small>Unresolved</small>
       </div>
       <div class="col-4">
-        <h5 class="text-secondary">{{in_progress|length}}</h5>
+        <h5 class="text-warning">{{in_progress}}</h5>
         <small>In progress</small>
       </div>
       <div class="col-4">
-        <h5 class="text-success">{{completed|length}}</h5>
+        <h5 class="text-success">{{completed}}</h5>
         <small>Completed</small>
       </div>
     </div>
@@ -30,6 +49,45 @@
   <!-- Latest queries — single card or horizontally scrollable row depending on count -->
   <div class="card p-3 mt-4">
     <h1>Latest Queries</h1>
+<<<<<<< HEAD
+    {% if latest %}
+          {% if new_count == 1 %}
+            <!-- Single match display -->
+            {% set query = latest[0] %}
+            <div class="latest-match-info p-3 rounded mt-2" style="background-color: #6c757d; color: white; width: fit-content; max-width: 100%;">
+              <p><strong>Type: {{ query.issue_type }}</strong></p>
+              <p>Title: {{ query.title }}</p>
+              <p>Status:
+                {% if query.status == 'completed' %}
+                  <span class="badge bg-success text-dark">{{query.status}}</span>
+                {% elif query.status == 'in progress' %}
+                  <span class="badge bg-warning text-dark">{{query.status}}</span>
+                {% else %}
+                  <span class="badge bg-info text-dark">{{query.status}}</span>
+                {% endif %}
+              </p>
+            </div>
+          {% else %}
+            <!-- Multiple matches with horizontal scroll -->
+            <div class="upcoming-matches-scroll">
+              {% for q in latest %}
+                <div class="latest-match-info p-3 rounded me-3 mt-2" style="background-color: #6c757d; color: white; width: fit-content; min-width: 250px; flex-shrink: 0;">
+                  <p><strong>Type: {{ q.issue_type }}</strong></p>
+                  <p>Title: {{ q.title }}</p>
+                  <p>Status:
+                    {% if q.status == 'completed' %}
+                      <span class="badge bg-success text-dark">{{q.status}}</span>
+                    {% elif q.status == 'in progress' %}
+                      <span class="badge bg-warning text-dark">{{q.status}}</span>
+                    {% else %}
+                      <span class="badge bg-info text-dark">{{q.status}}</span>
+                    {% endif %}
+                  </p>
+                </div>
+              {% endfor %}
+            </div>
+          {% endif %}
+=======
     {% if query %}
       {% if query|length == 1 %}
         <!-- Single query display -->
@@ -55,9 +113,11 @@
           {% endfor %}
         </div>
       {% endif %}
+>>>>>>> 636774957a8f4d3b201fa10a7d5fb54b1573f2b5
     {%else%}
-      <p>No queries yet</p>
+      <p>No queries yet, have a nice day!</p>
     {%endif%}
+    <a href="{{url_for('main.view_queries')}}" class = "btn btn-outline-primary mt-3">View all queries</a>
   </div>
 </div>
 {% include '.footer.html' %}

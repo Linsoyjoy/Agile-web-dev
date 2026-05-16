@@ -632,7 +632,7 @@ def save_weaknesses():
     user = User.query.filter_by(username=session['username']).first()
     user.weaknesses = request.form.get('weaknesses', '').strip()
     db.session.commit()
-    flash('Weaknesses saved!', 'success')
+    flash('Notes saved!', 'success')
     return redirect(url_for('main.profile'))
 
 
@@ -1055,9 +1055,14 @@ def query():
         title = request.form['title']
         description = request.form['description']
         timestamp = datetime.today()
+<<<<<<< HEAD
+        status = 'new'
+        
+=======
 
+>>>>>>> dcd73ae3d5241aa17a76dd9204d7722f43b9f70b
         #Create a new query and store in database
-        new_query = Queries(email=email, issue_type=issue_type, title=title, description=description, created_at=timestamp)
+        new_query = Queries(email=email, issue_type=issue_type, title=title, description=description, created_at=timestamp, status=status)
         db.session.add(new_query)
         db.session.commit()
         flash(f'Issue "{title}" has been submitted successfully! We will review it and get back to you soon.', 'success')
@@ -1341,6 +1346,28 @@ def admin_dashboard():
 
     username = session['username']
     privilege = User.query.get(username)
+<<<<<<< HEAD
+    
+    #Get 10 of the latest queries
+    latest_query = Queries.query.order_by(Queries.created_at.desc()).limit(10)
+
+    #Get new queries based on type
+    new_query_count = Queries.query.filter_by(status='new').count()
+    bug = Queries.query.filter_by(status ='new', issue_type='bug').count()
+    feature = Queries.query.filter_by(status ='new', issue_type='feature').count()
+    question = Queries.query.filter_by(status ='new', issue_type='question').count()
+    other = Queries.query.filter_by(status ='new', issue_type='other').count()
+
+    #Get current count of queries based on status
+    new = Queries.query.filter_by(status ='new').count()
+    in_progress = Queries.query.filter_by(status = 'in progress').count()
+    completed = Queries.query.filter_by(status = 'completed').count()
+
+    #Check if the current account is an admin account, otherwise deny access to page
+    if privilege.is_admin:
+        return render_template('home_admin.html', username=username, new_count = new_query_count,
+                               latest=latest_query, new=new,
+=======
 
     #Get latest queries and number of queries received today
     latest_query = Queries.query.all()
@@ -1352,8 +1379,10 @@ def admin_dashboard():
     if privilege.is_admin:
         return render_template('home_admin.html', username=username,
                                query=latest_query, unresolved=unresolved,
+>>>>>>> dcd73ae3d5241aa17a76dd9204d7722f43b9f70b
                                in_progress=in_progress, completed=completed,
-                               user=privilege)
+                               user=privilege, bug=bug, feature=feature,
+                               question=question, other=other)
     else:
         flash("sorry, you must be an admin to access this page!",'error')
         return redirect(url_for('main.home'))
@@ -1370,18 +1399,68 @@ def view_queries():
     privilege = User.query.get(username)
 
     #Get latest queries and number of queries received today
-    queries = Queries.query.all()
-    bug_query = Queries.query.filter_by(issue_type = 'bug').all()
-    feature_query = Queries.query.filter_by(issue_type = 'feature').all()
-    question_query = Queries.query.filter_by(issue_type = 'question').all()
-    other_query = Queries.query.filter_by(issue_type = 'other').all()
+    queries = Queries.query.order_by(Queries.created_at.desc()).all()
+    new = Queries.query.filter_by(status ='new').count()
+    in_progress = Queries.query.filter_by(status = 'in progress').count()
+    completed = Queries.query.filter_by(status = 'completed').count()
 
     #Check if the current account is an admin account, otherwise deny access to page
     if privilege.is_admin:
         return render_template('view_queries.html', username=username, 
-                               query=queries, bug=bug_query, 
-                               feature=feature_query,question=question_query,
-                               other=other_query, user=privilege)
+                               query=queries, user=privilege,
+                               new=new, in_progress=in_progress,
+                               completed=completed)
     else:
         flash("sorry, you must be an admin to access this page!",'error')
         return redirect(url_for('main.home'))
+
+@main.route('/current_query/<id>')
+def current_query(id):
+    if 'username' not in session:
+        flash('Please log in to access this page!', 'error')
+        return redirect(url_for('main.login'))
+    
+    username = session['username']
+    privilege = User.query.get(username)
+    current_query=Queries.query.get_or_404(id)
+
+    #Check if the current account is an admin account, otherwise deny access to page
+    if privilege.is_admin:
+        return render_template('current_query.html', username=username, 
+                                user=privilege, query=current_query)
+    else:
+        flash("sorry, you must be an admin to access this page!",'error')
+        return redirect(url_for('main.home'))
+
+@main.route('/update_query/<id>', methods=['GET', 'POST'])
+def update_query(id):
+    current_query=Queries.query.get_or_404(id)
+
+    if request.method == 'POST':
+        current_query.status = request.form['issue_status']
+        current_query.notes = request.form.get('notes', '')
+        #reply = request.form.get('reply', '')
+        
+        #Create a new query and store in database
+        try:
+            db.session.commit()
+            flash(f'Changes to issue been made.', 'success')
+            return redirect(url_for('main.view_queries'))
+        except:
+            flash(f'Error! changes to query were not saved', 'error')
+            return redirect(url_for('main.view_queries'))
+    else:
+        return redirect(url_for('main.current_query'))
+
+@main.route('/delete_query/<id>', methods=['GET','POST'])
+def delete_query(id):
+    chosen_query=Queries.query.get_or_404(id)
+    
+    try:
+        db.session.delete(chosen_query)
+        db.session.commit()
+        flash('Query deleted!','success')
+        return redirect(url_for('main.view_queries'))
+    except:
+        flash('Failed to delete query','success')
+        return redirect(url_for('main.view_queries'))

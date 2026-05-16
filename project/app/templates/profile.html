@@ -32,8 +32,7 @@
     </div>
     <div>
       <h2>{{ user.username }}</h2>
-      <p class="mb-1 text-muted">{{ user.email }}</p>
-      <!-- <button class="btn btn-primary btn-custom" onclick="addFriend()">Add Friend</button> -->
+      <p class="mb-2 text-light">{{ user.email }}</p>
       <button class="btn btn-success btn-custom" onclick="shareProfile()">Share Profile</button>
     </div>
   </div>
@@ -72,10 +71,10 @@
 
   <!-- Identified weaknesses — free-text field the user fills in manually, not auto-generated -->
   <div class="card mt-4 p-3">
-    <h5>Identified Weaknesses</h5>
+    <h5>Personal Note</h5>
     <form method="POST" action="{{ url_for('main.save_weaknesses') }}">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <textarea class="form-control mb-2" name="weaknesses" rows="3" placeholder="Enter your identified weaknesses...">{{ stats.weaknesses }}</textarea>
+      <textarea class="form-control mb-2" name="weaknesses" rows="3" placeholder="Enter your notes here (eg: identified weaknesses, study materials, etc.)">{{ stats.weaknesses }}</textarea>
       <button type="submit" class="btn btn-sm btn-primary">Save</button>
     </form>
   </div>
@@ -135,10 +134,6 @@
     }
   }
 
-  function addFriend() {
-    window.location.href = '/friends';
-  }
-
   function shareProfile() {
     const profileUrl = window.location.href;
     if (navigator.share) {
@@ -153,15 +148,6 @@
     }
   }
 
-  function viewFullStats() {
-    window.location.href = '/viewstats';
-  }
-
-  function findSimilarOpponents() {
-    window.location.href = '/leaderboard';
-  }
-
-  // Build a readable rating string from rapid/blitz/bullet fields
   function formatRatings(data) {
     const parts = [];
     if (data.rapid)  parts.push(`Rapid: ${data.rapid}`);

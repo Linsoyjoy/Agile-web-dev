@@ -74,11 +74,15 @@
               {% if user.is_admin %}
                 <li><a class="dropdown-item" href="{{ url_for('main.admin_dashboard') }}"><i class="bi bi-house me-2"></i>Admin dashboard</a></li>
                 <li><a class="dropdown-item" href="{{ url_for('main.view_queries') }}"><i class="bi bi-bar-chart me-2"></i>View queries</a></li>
+                <li><hr class="dropdown-divider"></li>
               {% endif %}
+<<<<<<< HEAD
+=======
 
               <li><hr class="dropdown-divider"></li>
 
               <!-- Theme toggle button — switches between light and dark mode -->
+>>>>>>> dcd73ae3d5241aa17a76dd9204d7722f43b9f70b
               <li>
                 <button class="dropdown-item" onclick="toggleTheme()">
                   <i class="bi bi-moon me-2" id="theme-icon"></i><span id="theme-label">Dark Mode</span>
