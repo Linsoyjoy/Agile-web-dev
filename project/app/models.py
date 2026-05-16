@@ -11,6 +11,10 @@ class User(db.Model):
     # User-written text describing their own identified weaknesses
     weaknesses = db.Column(db.Text, nullable=True)
     is_admin = db.Column(db.Boolean, default=False)
+    # External chess platform accounts
+    chesscom_username = db.Column(db.String(50), nullable=True)
+    lichess_username = db.Column(db.String(50), nullable=True)
+    fide_id = db.Column(db.String(20), nullable=True)
 
 
 class Tournament(db.Model):
