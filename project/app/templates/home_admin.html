@@ -49,10 +49,9 @@
   <!-- Latest queries — single card or horizontally scrollable row depending on count -->
   <div class="card p-3 mt-4">
     <h1>Latest Queries</h1>
-<<<<<<< HEAD
     {% if latest %}
           {% if new_count == 1 %}
-            <!-- Single match display -->
+            <!-- Single query display -->
             {% set query = latest[0] %}
             <div class="latest-match-info p-3 rounded mt-2" style="background-color: #6c757d; color: white; width: fit-content; max-width: 100%;">
               <p><strong>Type: {{ query.issue_type }}</strong></p>
@@ -68,7 +67,7 @@
               </p>
             </div>
           {% else %}
-            <!-- Multiple matches with horizontal scroll -->
+            <!-- Multiple queries with horizontal scroll -->
             <div class="upcoming-matches-scroll">
               {% for q in latest %}
                 <div class="latest-match-info p-3 rounded me-3 mt-2" style="background-color: #6c757d; color: white; width: fit-content; min-width: 250px; flex-shrink: 0;">
@@ -87,33 +86,6 @@
               {% endfor %}
             </div>
           {% endif %}
-=======
-    {% if query %}
-      {% if query|length == 1 %}
-        <!-- Single query display -->
-        {% set query = query[0] %}
-        <div class="latest-match-info p-3 rounded" style="background-color: #6c757d; color: white; width: fit-content; max-width: 100%;">
-          <p><strong>Type: {{ query.issue_type }}</strong></p>
-          <p>Title: {{ query.title }}</p>
-          <p>Status:
-            <span class="badge bg-warning text-dark">{{query.status}}</span>
-          </p>
-        </div>
-      {% else %}
-        <!-- Multiple queries with horizontal scroll -->
-        <div class="upcoming-matches-scroll">
-          {% for q in query %}
-            <div class="latest-match-info p-3 rounded me-3" style="background-color: #6c757d; color: white; width: fit-content; min-width: 250px; flex-shrink: 0;">
-              <p><strong>Type: {{ q.issue_type }}</strong></p>
-              <p>Title: {{ q.title }}</p>
-              <p>Status:
-                <span class="badge bg-warning text-dark">{{q.status}}</span>
-              </p>
-            </div>
-          {% endfor %}
-        </div>
-      {% endif %}
->>>>>>> 636774957a8f4d3b201fa10a7d5fb54b1573f2b5
     {%else%}
       <p>No queries yet, have a nice day!</p>
     {%endif%}
