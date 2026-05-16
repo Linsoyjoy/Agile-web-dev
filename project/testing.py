@@ -4,9 +4,11 @@ from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 from app.models import User
 
+app = create_app()
+
 #populate the data
 """Add sample users and data for testing"""
-with create_app:
+with app.app_context():
     # Check if data already exists
     if User.query.filter_by(username='alice').first():
         print("Sample data already exists")
