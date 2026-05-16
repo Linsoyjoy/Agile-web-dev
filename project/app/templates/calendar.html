@@ -2,6 +2,7 @@
 {% block title %}Tournament Calendar - Chessmate{% endblock %}
 
 {% block extra_head %}
+<!-- FullCalendar CSS — required for the interactive month/week/day calendar -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css">
 {% endblock %}
 
@@ -13,6 +14,8 @@
   </div>
 
   <div class="row">
+
+    <!-- Left column — interactive FullCalendar widget -->
     <div class="col-md-8">
       <div class="card card-ui">
         <div class="card-body">
@@ -21,23 +24,33 @@
       </div>
     </div>
 
+    <!-- Right column — match list and quick stats sidebar -->
     <div class="col-md-4">
+
+      <!-- Recent matches sidebar — shows up to 5 matches with result badges -->
       <div class="card card-ui mb-3">
         <div class="card-body">
           <h5 class="card-title">Your Matches</h5>
           <div class="upcoming-matches">
             {% for match, tournament in matches[:5] %}
+              <!-- Reverse result when the logged-in user is the opponent, not the recording player -->
               {% set raw = (match.result or '')|lower %}
               {% if match.opponent == username and raw == 'win' %}{% set r = 'loss' %}
               {% elif match.opponent == username and raw == 'loss' %}{% set r = 'win' %}
               {% else %}{% set r = raw %}{% endif %}
               {% set is_upcoming = r == 'pending' %}
+
               <div class="match-item p-2 mb-2 border rounded">
                 <small class="text-muted">{{ match.date_played.strftime('%b %d, %Y') }}</small>
+
                 {% if tournament %}
                   <div class="fw-bold">{{ tournament.name }}</div>
                 {% endif %}
+
+                <!-- Always show logged-in user first in the "X vs Y" label -->
                 <div>{{ username }} vs {{ match.opponent if match.player == username else match.player }}</div>
+
+                <!-- Colour-coded result badge -->
                 <div class="mt-1">
                   {% if is_upcoming %}
                     <span class="badge bg-warning text-dark">Upcoming</span>
@@ -51,6 +64,7 @@
                 </div>
               </div>
             {% endfor %}
+
             {% if not matches %}
               <p class="text-muted">No matches scheduled yet.</p>
             {% endif %}
@@ -59,6 +73,7 @@
         </div>
       </div>
 
+      <!-- Quick stats card — total, upcoming, and completed match counts -->
       <div class="card card-ui">
         <div class="card-body">
           <h5 class="card-title">Quick Stats</h5>
@@ -83,6 +98,7 @@
           </div>
         </div>
       </div>
+
     </div>
   </div>
 </div>
@@ -90,11 +106,15 @@
 {% endblock %}
 
 {% block scripts %}
+<!-- FullCalendar JS — renders the interactive calendar with match events -->
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
 <script>
   document.addEventListener('DOMContentLoaded', function() {
     var calendarEl = document.getElementById('calendar');
+
+    // Match events passed from the route — each has title, date, colour, and result metadata
     var eventsData = {{ events | tojson | safe }};
+
     var calendar = new FullCalendar.Calendar(calendarEl, {
       initialView: 'dayGridMonth',
       headerToolbar: {
@@ -103,6 +123,8 @@
         right: 'dayGridMonth,timeGridWeek,timeGridDay'
       },
       events: eventsData,
+
+      // Show a popup with match details when an event is clicked
       eventClick: function(info) {
         var props = info.event.extendedProps || {};
         var details = 'Match: ' + info.event.title + '\nDate: ' + info.event.start.toLocaleString();
@@ -112,6 +134,7 @@
         alert(details);
       }
     });
+
     calendar.render();
   });
 </script>
