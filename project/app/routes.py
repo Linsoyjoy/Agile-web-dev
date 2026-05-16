@@ -1189,12 +1189,8 @@ def query():
         title = request.form['title']
         description = request.form['description']
         timestamp = datetime.today()
-<<<<<<< HEAD
         status = 'new'
-        
-=======
 
->>>>>>> dcd73ae3d5241aa17a76dd9204d7722f43b9f70b
         #Create a new query and store in database
         new_query = Queries(email=email, issue_type=issue_type, title=title, description=description, created_at=timestamp, status=status)
         db.session.add(new_query)
@@ -1480,40 +1476,26 @@ def admin_dashboard():
 
     username = session['username']
     privilege = User.query.get(username)
-<<<<<<< HEAD
-    
+
     #Get 10 of the latest queries
     latest_query = Queries.query.order_by(Queries.created_at.desc()).limit(10)
 
     #Get new queries based on type
     new_query_count = Queries.query.filter_by(status='new').count()
-    bug = Queries.query.filter_by(status ='new', issue_type='bug').count()
-    feature = Queries.query.filter_by(status ='new', issue_type='feature').count()
-    question = Queries.query.filter_by(status ='new', issue_type='question').count()
-    other = Queries.query.filter_by(status ='new', issue_type='other').count()
+    bug = Queries.query.filter_by(status='new', issue_type='bug').count()
+    feature = Queries.query.filter_by(status='new', issue_type='feature').count()
+    question = Queries.query.filter_by(status='new', issue_type='question').count()
+    other = Queries.query.filter_by(status='new', issue_type='other').count()
 
     #Get current count of queries based on status
-    new = Queries.query.filter_by(status ='new').count()
-    in_progress = Queries.query.filter_by(status = 'in progress').count()
-    completed = Queries.query.filter_by(status = 'completed').count()
+    new = Queries.query.filter_by(status='new').count()
+    in_progress = Queries.query.filter_by(status='in progress').count()
+    completed = Queries.query.filter_by(status='completed').count()
 
     #Check if the current account is an admin account, otherwise deny access to page
     if privilege.is_admin:
-        return render_template('home_admin.html', username=username, new_count = new_query_count,
+        return render_template('home_admin.html', username=username, new_count=new_query_count,
                                latest=latest_query, new=new,
-=======
-
-    #Get latest queries and number of queries received today
-    latest_query = Queries.query.all()
-    unresolved = Queries.query.filter_by(status ='unresolved').all()
-    in_progress = Queries.query.filter_by(status = 'in progress').all()
-    completed = Queries.query.filter_by(status = 'completed').all()
-
-    #Check if the current account is an admin account, otherwise deny access to page
-    if privilege.is_admin:
-        return render_template('home_admin.html', username=username,
-                               query=latest_query, unresolved=unresolved,
->>>>>>> dcd73ae3d5241aa17a76dd9204d7722f43b9f70b
                                in_progress=in_progress, completed=completed,
                                user=privilege, bug=bug, feature=feature,
                                question=question, other=other)
