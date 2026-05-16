@@ -13,7 +13,7 @@ def _player_stats(username):
     """Calculate wins/losses/draws/win_rate/elo for a given user."""
     matches = Match.query.filter(
         (Match.player == username) | (Match.opponent == username)
-    ).all()
+    ).filter(Match.termination != 'upcoming').all()
     wins = losses = draws = 0
     for m in matches:
         r = (m.result or '').lower()
@@ -1018,6 +1018,8 @@ def h2h():
 
         for m in my_matches:
             r = (m.result or '').lower()
+            if r == 'pending':
+                continue
             if r == 'win':
                 my_wins += 1
             elif r == 'loss':
@@ -1033,6 +1035,8 @@ def h2h():
 
         for m in their_matches:
             r = (m.result or '').lower()
+            if r == 'pending':
+                continue
             # Their win = my loss, their loss = my win
             if r == 'win':
                 my_losses += 1
