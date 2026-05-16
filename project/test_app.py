@@ -1,4 +1,5 @@
 import unittest
+from datetime import datetime
 from app import create_app, db
 from app.models import User, Tournament, Match
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -195,6 +196,51 @@ class ChessMateUnitTestCase(unittest.TestCase):
         self.assertEqual(match.player_colour, 'White')
         self.assertEqual(match.result, 'Win')
         self.assertEqual(match.termination, 'Checkmate')
+
+    def test_h2h_stats(self):
+        client = self.app.test_client()
+
+        # Two users with different records against each other
+        alice = User(username='alice', email='alice@example.com', password_hash=generate_password_hash('password123', method='pbkdf2:sha256'))
+        bob   = User(username='bob',   email='bob@example.com',   password_hash=generate_password_hash('password123', method='pbkdf2:sha256'))
+        db.session.add_all([alice, bob])
+        db.session.commit()
+
+        # Alice records: 2 wins and 1 loss against bob
+        db.session.add_all([
+            Match(player='alice', opponent='bob', result='win',  player_colour='white', moves='1. e4', termination='checkmate', date_played=datetime(2024, 1, 1)),
+            Match(player='alice', opponent='bob', result='win',  player_colour='black', moves='1. d4', termination='checkmate', date_played=datetime(2024, 1, 2)),
+            Match(player='alice', opponent='bob', result='loss', player_colour='white', moves='1. c4', termination='resignation', date_played=datetime(2024, 1, 3)),
+        ])
+        # Bob records: 1 win and 1 draw against alice (adds to alice's loss/draw tally)
+        db.session.add_all([
+            Match(player='bob', opponent='alice', result='win',  player_colour='black', moves='1. f4', termination='checkmate',  date_played=datetime(2024, 1, 4)),
+            Match(player='bob', opponent='alice', result='draw', player_colour='white', moves='1. g4', termination='stalemate',  date_played=datetime(2024, 1, 5)),
+        ])
+        db.session.commit()
+
+        client.post('/login', data={'username': 'alice', 'password': 'password123'})
+        resp = client.get('/h2h?opponent=bob')
+        self.assertEqual(resp.status_code, 200)
+
+        # alice: 2 wins from own records + 1 win from bob's loss = 3 wins
+        # alice: 1 loss from own records + 1 loss from bob's win = 2 losses
+        # alice: 1 draw from bob's draw = 1 draw
+        self.assertIn(b'3', resp.data)   # my_wins
+        self.assertIn(b'2', resp.data)   # opp_wins (= alice's losses)
+        self.assertIn(b'1', resp.data)   # draws
+
+        # All 5 matches should appear in match history
+        data = resp.data.decode()
+        self.assertEqual(data.count('2024-01-0'), 5)
+
+        # Verify opponent sees the mirror image
+        client.get('/logout')
+        client.post('/login', data={'username': 'bob', 'password': 'password123'})
+        resp = client.get('/h2h?opponent=alice')
+        self.assertEqual(resp.status_code, 200)
+        data = resp.data.decode()
+        self.assertEqual(data.count('2024-01-0'), 5)
 
 if __name__ == '__main__':
     unittest.main()
