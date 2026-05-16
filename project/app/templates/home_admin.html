@@ -44,10 +44,10 @@
             <div class="upcoming-matches-scroll">
               {% for q in query %}
                 <div class="latest-match-info p-3 rounded me-3" style="background-color: #6c757d; color: white; width: fit-content; min-width: 250px; flex-shrink: 0;">
-                  <p><strong>Type: {{ query.issue_type }}</strong></p>
-                  <p>Title: {{ query.title }}</p>
+                  <p><strong>Type: {{ q.issue_type }}</strong></p>
+                  <p>Title: {{ q.title }}</p>
                   <p>Status:
-                    <span class="badge bg-warning text-dark">{{query.status}}</span>
+                    <span class="badge bg-warning text-dark">{{q.status}}</span>
                   </p>
                 </div>
               {% endfor %}
