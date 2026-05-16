@@ -52,17 +52,87 @@
     <svg id="eloChart" viewBox="0 0 500 150" style="width:100%;display:block;"></svg>
   </div>
 
+  <!-- Colour Performance -->
   <div class="card stat-card mt-5 p-4">
-    <h5 class="mb-4">Advanced Metrics</h5>
-    <div class="d-flex flex-wrap gap-3">
-      <button class="btn btn-outline-primary btn-custom" disabled>Accuracy</button>
-      <button class="btn btn-outline-primary btn-custom" disabled>Blunders per Game</button>
-      <button class="btn btn-outline-primary btn-custom" disabled>Average Move Time</button>
-      <button class="btn btn-outline-primary btn-custom" disabled>Opening Performance</button>
-      <button class="btn btn-outline-primary btn-custom" disabled>Endgame Strength</button>
-      <button class="btn btn-outline-primary btn-custom" disabled>Tactical Vision</button>
+    <h5 class="mb-3">Colour Performance</h5>
+    <div class="row g-3">
+      {% for colour in ['white', 'black'] %}
+      {% set cs = colour_stats[colour] %}
+      {% set total = cs.win + cs.loss + cs.draw %}
+      <div class="col-md-6">
+        <h6 class="text-capitalize">{{ colour }}</h6>
+        {% if total > 0 %}
+        <div class="progress mb-1" style="height:18px;">
+          <div class="progress-bar bg-success" style="width:{{ (cs.win/total*100)|round }}%">{{ cs.win }}W</div>
+          <div class="progress-bar bg-danger" style="width:{{ (cs.loss/total*100)|round }}%">{{ cs.loss }}L</div>
+          <div class="progress-bar bg-secondary" style="width:{{ (cs.draw/total*100)|round }}%">{{ cs.draw }}D</div>
+        </div>
+        <small class="text-muted">{{ total }} games · {{ (cs.win/total*100)|round|int }}% win rate</small>
+        {% else %}
+        <small class="text-muted">No games recorded as {{ colour }}</small>
+        {% endif %}
+      </div>
+      {% endfor %}
     </div>
-    <small class="text-muted mt-3 d-block">These buttons are not clickable yet</small>
+  </div>
+
+  <!-- How Games End -->
+  <div class="card stat-card mt-4 p-4">
+    <h5 class="mb-3">How Games End</h5>
+    {% if top_terminations %}
+    {% set max_term = top_terminations[0][1] %}
+    {% for term, count in top_terminations %}
+    <div class="d-flex align-items-center mb-2">
+      <span class="text-capitalize me-2" style="min-width:130px;">{{ term }}</span>
+      <div class="progress flex-grow-1 me-2" style="height:14px;">
+        <div class="progress-bar bg-primary" style="width:{{ (count/max_term*100)|round }}%;"></div>
+      </div>
+      <small>{{ count }}</small>
+    </div>
+    {% endfor %}
+    {% else %}
+    <small class="text-muted">No completed games yet.</small>
+    {% endif %}
+  </div>
+
+  <!-- Streaks -->
+  <div class="card stat-card mt-4 p-4">
+    <h5 class="mb-3">Streaks</h5>
+    <div class="row g-3">
+      <div class="col-6 text-center">
+        <div class="fs-1 fw-bold">{{ current_streak }}</div>
+        <div class="text-muted small">Current {{ streak_type or '—' }} streak</div>
+      </div>
+      <div class="col-6 text-center">
+        <div class="fs-1 fw-bold">{{ best_win_streak }}</div>
+        <div class="text-muted small">Best win streak</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Opening Performance -->
+  <div class="card stat-card mt-4 p-4">
+    <h5 class="mb-3">Opening Performance</h5>
+    {% if opening_list %}
+    <div style="overflow-x:auto;">
+      <table class="table table-sm table-hover mb-0">
+        <thead><tr><th>Opening</th><th>W</th><th>L</th><th>D</th><th>Win %</th></tr></thead>
+        <tbody>
+        {% for o in opening_list %}
+        <tr>
+          <td>{{ o.name }}</td>
+          <td class="text-success">{{ o.win }}</td>
+          <td class="text-danger">{{ o.loss }}</td>
+          <td class="text-secondary">{{ o.draw }}</td>
+          <td>{{ o.win_rate }}%</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <small class="text-muted">No completed games yet.</small>
+    {% endif %}
   </div>
 
   <div class="card card-ui mt-4 p-3">

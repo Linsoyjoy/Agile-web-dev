@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import urllib.request
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -11,6 +12,61 @@ from .models import User, Tournament, Match, Friendship, Queries
 from .forgot_password import reset_password_email
 from .query_reply import send_reply
 from datetime import datetime
+
+# Opening lookup — ordered most-specific first so the longest match wins
+_OPENINGS = [
+    ('e4 e5 Nf3 Nc6 Bb5 a6 Ba4 Nf6 O-O', 'Ruy López — Open'),
+    ('e4 e5 Nf3 Nc6 Bb5 a6',              'Ruy López — Morphy'),
+    ('e4 e5 Nf3 Nc6 Bb5',                 'Ruy López'),
+    ('e4 e5 Nf3 Nc6 Bc4 Bc5',            'Italian — Giuoco Piano'),
+    ('e4 e5 Nf3 Nc6 Bc4 Nf6',            'Italian — Two Knights'),
+    ('e4 e5 Nf3 Nc6 Bc4',                'Italian Game'),
+    ('e4 e5 Nf3 Nc6 d4',                 'Scotch Game'),
+    ('e4 e5 f4',                          "King's Gambit"),
+    ('e4 e5 Nf3 Nf6',                    'Petrov Defence'),
+    ('e4 c5 Nf3 d6 d4 cxd4 Nxd4 Nf6 Nc3 g6', 'Sicilian — Dragon'),
+    ('e4 c5 Nf3 d6 d4 cxd4 Nxd4 Nf6 Nc3 a6', 'Sicilian — Najdorf'),
+    ('e4 c5 Nf3 Nc6 d4 cxd4 Nxd4',      'Sicilian — Classical'),
+    ('e4 c5 Nf3 e6',                     'Sicilian — Kan'),
+    ('e4 c5',                            'Sicilian Defence'),
+    ('e4 e6 d4 d5',                      'French Defence'),
+    ('e4 e6',                            'French Defence'),
+    ('e4 c6 d4 d5 Nc3 dxe4 Nxe4',       'Caro-Kann — Classical'),
+    ('e4 c6',                            'Caro-Kann'),
+    ('e4 d5',                            'Scandinavian Defence'),
+    ('e4 Nf6',                           "Alekhine's Defence"),
+    ('e4 g6',                            'Modern Defence'),
+    ('d4 Nf6 c4 g6 Nc3 d5',             'Grünfeld Defence'),
+    ('d4 Nf6 c4 g6 Nc3 Bg7 e4',         "King's Indian — Classical"),
+    ('d4 Nf6 c4 g6',                     "King's Indian Defence"),
+    ('d4 Nf6 c4 e6 Nc3 Bb4',            'Nimzo-Indian Defence'),
+    ('d4 Nf6 c4 e6 Nf3 b6',             "Queen's Indian Defence"),
+    ('d4 d5 c4 dxc4',                   "Queen's Gambit Accepted"),
+    ('d4 d5 c4 c6 Nf3 Nf6',            'Slav — Three Knights'),
+    ('d4 d5 c4 c6',                     'Slav Defence'),
+    ('d4 d5 c4 e6 Nc3 Nf6 Bg5',        "Queen's Gambit — Orthodox"),
+    ('d4 d5 c4 e6',                     "Queen's Gambit Declined"),
+    ('d4 d5 c4',                        "Queen's Gambit"),
+    ('d4 f5',                           'Dutch Defence'),
+    ('d4 d5',                           "Closed Game"),
+    ('c4 e5',                           'English — Reversed Sicilian'),
+    ('c4',                              'English Opening'),
+    ('Nf3 d5 c4',                       'Réti Opening'),
+    ('Nf3',                             'Réti / Zukertort'),
+    ('d4',                              "Queen's Pawn Game"),
+    ('e4',                              "King's Pawn Game"),
+]
+
+
+def _identify_opening(pgn):
+    # Strip move numbers (e.g. "1." "12."), annotations, and result markers
+    clean = re.sub(r'\d+\.+', '', pgn or '')
+    clean = re.sub(r'[+#!?]', '', clean)
+    clean = ' '.join(clean.split())
+    for moves, name in _OPENINGS:
+        if clean.startswith(moves):
+            return name
+    return 'Other'
 
 
 def _player_stats(username):
@@ -788,8 +844,82 @@ def viewstats():
         (Match.player == username) | (Match.opponent == username)
     ).order_by(Match.date_played.desc()).all()
 
+    # White vs black performance split
+    colour_stats = {'white': {'win': 0, 'loss': 0, 'draw': 0},
+                    'black': {'win': 0, 'loss': 0, 'draw': 0}}
+    for m in user_matches:
+        r = (m.result or '').lower()
+        if r not in ('win', 'loss', 'draw'):
+            continue
+        if m.player == username:
+            col = (m.player_colour or '').lower()
+            res = r
+        else:
+            col = 'black' if (m.player_colour or '').lower() == 'white' else 'white'
+            res = 'win' if r == 'loss' else ('loss' if r == 'win' else 'draw')
+        if col in colour_stats:
+            colour_stats[col][res] += 1
+
+    # Top termination types
+    term_counts = {}
+    for m in user_matches:
+        t = (m.termination or '').strip().lower()
+        if t and t != 'upcoming':
+            term_counts[t] = term_counts.get(t, 0) + 1
+    top_terminations = sorted(term_counts.items(), key=lambda x: x[1], reverse=True)[:5]
+
+    # Current streak and best win streak
+    current_streak = 0
+    streak_type = None
+    best_win_streak = 0
+    temp_win_streak = 0
+    for m in reversed(sorted_matches):
+        r = (m.result or '').lower()
+        actual = r if m.player == username else ('win' if r == 'loss' else ('loss' if r == 'win' else 'draw'))
+        if streak_type is None:
+            streak_type = actual
+            current_streak = 1
+        elif actual == streak_type:
+            current_streak += 1
+        else:
+            break
+        if actual == 'win':
+            temp_win_streak += 1
+            best_win_streak = max(best_win_streak, temp_win_streak)
+        else:
+            temp_win_streak = 0
+
+    # Opening performance table
+    opening_map = {}
+    for m in user_matches:
+        r = (m.result or '').lower()
+        if r not in ('win', 'loss', 'draw'):
+            continue
+        name = _identify_opening(m.moves)
+        actual = r if m.player == username else ('win' if r == 'loss' else ('loss' if r == 'win' else 'draw'))
+        if name not in opening_map:
+            opening_map[name] = {'win': 0, 'loss': 0, 'draw': 0}
+        opening_map[name][actual] += 1
+    opening_list = []
+    for name, counts in sorted(opening_map.items(), key=lambda x: sum(x[1].values()), reverse=True)[:8]:
+        total = counts['win'] + counts['loss'] + counts['draw']
+        opening_list.append({
+            'name': name,
+            'win': counts['win'],
+            'loss': counts['loss'],
+            'draw': counts['draw'],
+            'total': total,
+            'win_rate': round(counts['win'] / total * 100) if total else 0
+        })
+
     return render_template('viewstats.html', username=username, user=user, stats=stats,
-                           matches=my_matches, elo_history=elo_history)
+                           matches=my_matches, elo_history=elo_history,
+                           colour_stats=colour_stats,
+                           top_terminations=top_terminations,
+                           current_streak=current_streak,
+                           streak_type=streak_type,
+                           best_win_streak=best_win_streak,
+                           opening_list=opening_list)
 
 
 # Calendar page — displays all the user's matches as FullCalendar events, colour-coded by result
@@ -1054,7 +1184,12 @@ def query():
         title = request.form['title']
         description = request.form['description']
         timestamp = datetime.today()
+<<<<<<< HEAD
         
+=======
+        status = 'new'
+
+>>>>>>> 101a1209452cbf0888954b134f3f2c8317f504e1
         #Create a new query and store in database
         new_query = Queries(email=email, issue_type=issue_type, title=title, description=description, created_at=timestamp)
         db.session.add(new_query)
@@ -1340,25 +1475,29 @@ def admin_dashboard():
 
     username = session['username']
     privilege = User.query.get(username)
+<<<<<<< HEAD
     
+=======
+
+>>>>>>> 101a1209452cbf0888954b134f3f2c8317f504e1
     #Get 10 of the latest queries
     latest_query = Queries.query.order_by(Queries.created_at.desc()).limit(10)
 
     #Get new queries based on type
     new_query_count = Queries.query.filter_by(status='new').count()
-    bug = Queries.query.filter_by(status ='new', issue_type='bug').count()
-    feature = Queries.query.filter_by(status ='new', issue_type='feature').count()
-    question = Queries.query.filter_by(status ='new', issue_type='question').count()
-    other = Queries.query.filter_by(status ='new', issue_type='other').count()
+    bug = Queries.query.filter_by(status='new', issue_type='bug').count()
+    feature = Queries.query.filter_by(status='new', issue_type='feature').count()
+    question = Queries.query.filter_by(status='new', issue_type='question').count()
+    other = Queries.query.filter_by(status='new', issue_type='other').count()
 
     #Get current count of queries based on status
-    new = Queries.query.filter_by(status ='new').count()
-    in_progress = Queries.query.filter_by(status = 'in progress').count()
-    completed = Queries.query.filter_by(status = 'completed').count()
+    new = Queries.query.filter_by(status='new').count()
+    in_progress = Queries.query.filter_by(status='in progress').count()
+    completed = Queries.query.filter_by(status='completed').count()
 
     #Check if the current account is an admin account, otherwise deny access to page
     if privilege.is_admin:
-        return render_template('home_admin.html', username=username, new_count = new_query_count,
+        return render_template('home_admin.html', username=username, new_count=new_query_count,
                                latest=latest_query, new=new,
                                in_progress=in_progress, completed=completed,
                                user=privilege, bug=bug, feature=feature,
