@@ -8,6 +8,7 @@ default_db_path = 'sqlite:///' + os.path.join(basedir,"database","users.db")
 
 class Config: #Shared between Deployment & Development configs
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    
     # Secret key must be set in .env — never hardcoded to prevent security vulnerabilities
     SECRET_KEY = os.getenv('SECRET_KEY')
     if not SECRET_KEY:

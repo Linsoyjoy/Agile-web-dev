@@ -10,6 +10,7 @@ from app import db, csrf
 from .blueprints import main
 from .models import User, Tournament, Match, Friendship, Queries
 from .forgot_password import reset_password_email
+from .query_reply import send_reply
 from datetime import datetime
 
 # Opening lookup — ordered most-specific first so the longest match wins
@@ -698,8 +699,6 @@ def save_platforms():
     if 'username' not in session:
         return redirect(url_for('main.login'))
     user = User.query.filter_by(username=session['username']).first()
-    if not user:
-        return redirect(url_for('main.login'))
     user.chesscom_username = request.form.get('chesscom_username', '').strip() or None
     user.lichess_username = request.form.get('lichess_username', '').strip() or None
     user.fide_id = request.form.get('fide_id', '').strip() or None
@@ -716,8 +715,6 @@ def fetch_ratings():
         return jsonify({'error': 'Not logged in'}), 401
 
     user = User.query.filter_by(username=session['username']).first()
-    if not user:
-        return jsonify({'error': 'Not logged in'}), 401
     ratings = {}
 
     if user.chesscom_username:
@@ -1176,12 +1173,10 @@ def delete_match(match_id):
 # Query/support page — lets users submit an issue report which is saved to the database
 @main.route('/query', methods=['GET', 'POST'])
 def query():
-    if 'username' not in session:
-        flash('Please log in to access this page!', 'error')
-        return redirect(url_for('main.login'))
-
-    username = session['username']
-    privilege = User.query.get(username)
+    if 'username' in session:
+        username = session['username']
+        privilege = User.query.get(username)
+        return render_template('query.html', username=username, user=privilege)
 
     if request.method == 'POST':
         email = request.form.get('email', '')
@@ -1189,16 +1184,20 @@ def query():
         title = request.form['title']
         description = request.form['description']
         timestamp = datetime.today()
+<<<<<<< HEAD
+        
+=======
         status = 'new'
 
+>>>>>>> 101a1209452cbf0888954b134f3f2c8317f504e1
         #Create a new query and store in database
-        new_query = Queries(email=email, issue_type=issue_type, title=title, description=description, created_at=timestamp, status=status)
+        new_query = Queries(email=email, issue_type=issue_type, title=title, description=description, created_at=timestamp)
         db.session.add(new_query)
         db.session.commit()
         flash(f'Issue "{title}" has been submitted successfully! We will review it and get back to you soon.', 'success')
         return redirect(url_for('main.query'))
 
-    return render_template('query.html', username=username, user=privilege)
+    return render_template('query.html')
 
 
 # FAQ page — static page, passes user object for nav bar if logged in
@@ -1385,7 +1384,7 @@ def signup():
             flash('Email already registered!', 'error')
             return render_template('signup.html')
 
-        password_hash = generate_password_hash(password, method='pbkdf2:sha256')
+        password_hash = generate_password_hash(password)
         new_user = User(username=username, email=email, password_hash=password_hash)
         db.session.add(new_user)
         db.session.commit()
@@ -1446,7 +1445,7 @@ def forgotpassword():
                     # Update user's password
                     user = User.query.filter_by(email=session.get('resetemail')).first()
                     if user:
-                        user.password_hash = generate_password_hash(password, method='pbkdf2:sha256')
+                        user.password_hash = generate_password_hash(password)
                         try:
                             db.session.commit()
                         except Exception as e:
@@ -1476,7 +1475,11 @@ def admin_dashboard():
 
     username = session['username']
     privilege = User.query.get(username)
+<<<<<<< HEAD
+    
+=======
 
+>>>>>>> 101a1209452cbf0888954b134f3f2c8317f504e1
     #Get 10 of the latest queries
     latest_query = Queries.query.order_by(Queries.created_at.desc()).limit(10)
 
@@ -1555,15 +1558,19 @@ def update_query(id):
     if request.method == 'POST':
         current_query.status = request.form['issue_status']
         current_query.notes = request.form.get('notes', '')
-        #reply = request.form.get('reply', '')
+        email_subject = request.form.get('subject', '')
+        email_body = request.form.get('body','')
         
         #Create a new query and store in database
         try:
+            if email_body != '':
+                send_reply(email_subject,current_query.email,email_body)
+                flash('Email sent!', 'success')
             db.session.commit()
-            flash(f'Changes to issue been made.', 'success')
+            flash('Changes to issue been made.', 'success')
             return redirect(url_for('main.view_queries'))
         except:
-            flash(f'Error! changes to query were not saved', 'error')
+            flash('Error! changes to query were not saved', 'error')
             return redirect(url_for('main.view_queries'))
     else:
         return redirect(url_for('main.current_query'))
@@ -1572,6 +1579,7 @@ def update_query(id):
 def delete_query(id):
     chosen_query=Queries.query.get_or_404(id)
     
+    #Check if the given query can be deleted
     try:
         db.session.delete(chosen_query)
         db.session.commit()

@@ -13,16 +13,15 @@
       <div class="card card-ui">
         <div class="card-body">
 
-          <!-- Optional email — used by admins to follow up on the query -->
-          <div class="mb-3">
-            <label for="email" class="form-label">Email (optional)</label>
-            <input type="email" class="form-control" id="email" name="email" placeholder="your.email@example.com">
-            <div class="form-text">We'll contact you at this email if we need more information</div>
-          </div>
-
           <!-- Query submission form — saved to the Queries table and reviewed by admins -->
           <form method="POST">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <!-- Optional email — used by admins to follow up on the query -->
+            <div class="mb-3">
+              <label for="email" class="form-label">Email (optional)</label>
+              <input type="email" class="form-control" id="email" name="email" placeholder="your.email@example.com">
+              <div class="form-text">We'll contact you at this email if we need more information</div>
+            </div>
 
             <!-- Issue type — used to filter queries in the admin view -->
             <div class="mb-3">

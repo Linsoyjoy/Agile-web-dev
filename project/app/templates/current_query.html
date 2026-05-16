@@ -32,7 +32,7 @@
             <input type= "hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class ="row">
               <div class=" col-4 mb-3">
-                <label for="issue_type" class="form-label">Status</label>
+                <label for="status" class="form-label">Status</label>
                 <select class="form-select" id="issue_status" name="issue_status" required>
                   <option value="new">{{query.status}}</option>
                   {% if query.status == 'new'%}
@@ -69,11 +69,16 @@
               <!--Reply email-->
               <div class="tab-pane fade" id="reply" role="tabpanel" aria-labelledby="reply-tab">
                 <div class="my-3">
-                  <textarea class="form-control" id="email" name="email" rows="6" placeholder="Write a reply to the sender's email (max. 1000 characters)"></textarea>
+                  <label for="email" class="form-label">Subject</label>
+                  <input type="email" class="form-control" id="subject" name="subject" placeholder="Write a message subject" value="Reply to query id #{{query.id}}">
+                </div>
+                <div class="my-3">
+                  <label for="email" class="form-label">Body</label>
+                  <textarea class="form-control" id="body" name="body" rows="6" placeholder="Write a reply to the sender's email (max. 1000 characters)"></textarea>
                 </div>
               </div>
             </div>
-            <button type="submit" class="btn btn-primary">Save changes</button>
+            <button type="submit" class="btn btn-primary" formnovalidate>Save changes</button>
           </form>
           <form method="POST" action="{{ url_for('main.delete_query',id=query.id) }}" class="d-inline"
             onsubmit="return confirm('Delete this query?')">
