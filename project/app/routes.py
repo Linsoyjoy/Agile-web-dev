@@ -9,6 +9,31 @@ from .models import User, Tournament, Match, Friendship, Queries
 from .forgot_password import reset_password_email
 from datetime import datetime
 
+def _player_stats(username):
+    """Calculate wins/losses/draws/win_rate/elo for a given user."""
+    matches = Match.query.filter(
+        (Match.player == username) | (Match.opponent == username)
+    ).all()
+    wins = losses = draws = 0
+    for m in matches:
+        r = (m.result or '').lower()
+        if r == 'pending':
+            continue
+        if m.player == username:
+            if r == 'win': wins += 1
+            elif r == 'loss': losses += 1
+            elif r == 'draw': draws += 1
+        else:
+            if r == 'loss': wins += 1
+            elif r == 'win': losses += 1
+            elif r == 'draw': draws += 1
+    total = wins + losses + draws
+    win_rate = round((wins / total * 100) if total > 0 else 0, 1)
+    # Simplified ELO: starts at 1200, scales with wins and win rate
+    elo = round(1200 + (wins * 10) + (win_rate * 2))
+    return {'wins': wins, 'losses': losses, 'draws': draws, 'win_rate': win_rate, 'elo': elo}
+
+
 @main.context_processor
 def inject_profile_pic():
     if 'username' in session:
@@ -117,41 +142,14 @@ def friends():
     players = []
     
     for u in all_users:
-        matches = Match.query.filter(
-            (Match.player == u.username) | (Match.opponent == u.username)
-        ).all()
-        
-        wins = losses = draws = 0
-        for m in matches:
-            r = (m.result or '').lower()
-            if m.player == u.username:
-                if r == 'win': 
-                    wins += 1
-                elif r == 'loss': 
-                    losses += 1
-                elif r == 'draw': 
-                    draws += 1
-            else:
-                if r == 'loss': 
-                    wins += 1
-                elif r == 'win': 
-                    losses += 1
-                elif r == 'draw': 
-                    draws += 1
-        
-        total = wins + losses + draws
-        win_rate = round((wins / total * 100) if total > 0 else 0, 1)
-        
-        # Simple ELO calculation based on wins and win rate
-        elo = 1200 + (wins * 10) + (win_rate * 2)
-        
+        s = _player_stats(u.username)
         players.append({
             'username': u.username,
-            'wins': wins,
-            'losses': losses,
-            'draws': draws,
-            'win_rate': win_rate,
-            'elo': round(elo),
+            'wins': s['wins'],
+            'losses': s['losses'],
+            'draws': s['draws'],
+            'win_rate': s['win_rate'],
+            'elo': s['elo'],
             'is_current_user': u.username == current_user
         })
     
@@ -179,33 +177,14 @@ def friends():
         # Get friend's stats
         friend_user = User.query.filter_by(username=friend_username).first()
         if friend_user:
-            friend_matches = Match.query.filter(
-                (Match.player == friend_username) | (Match.opponent == friend_username)
-            ).all()
-            
-            wins = losses = draws = 0
-            for m in friend_matches:
-                r = (m.result or '').lower()
-                if m.player == friend_username:
-                    if r == 'win': wins += 1
-                    elif r == 'loss': losses += 1
-                    elif r == 'draw': draws += 1
-                else:
-                    if r == 'loss': wins += 1
-                    elif r == 'win': losses += 1
-                    elif r == 'draw': draws += 1
-            
-            total = wins + losses + draws
-            win_rate = round((wins / total * 100) if total > 0 else 0, 1)
-            elo = 1200 + (wins * 10) + (win_rate * 2)
-            
+            s = _player_stats(friend_username)
             current_friends.append({
                 'username': friend_username,
-                'wins': wins,
-                'losses': losses,
-                'draws': draws,
-                'win_rate': win_rate,
-                'elo': round(elo)
+                'wins': s['wins'],
+                'losses': s['losses'],
+                'draws': s['draws'],
+                'win_rate': s['win_rate'],
+                'elo': s['elo']
             })
     
     # Build friends-only leaderboard (current user + accepted friends)
@@ -427,86 +406,41 @@ def view_user(username):
         else:
             friendship_status = 'not_friends'
     
-    # Get user's match statistics
+    s = _player_stats(username)
+
+    # Build recent match list for display (completed matches only)
     user_matches = Match.query.filter(
         (Match.player == username) | (Match.opponent == username)
     ).all()
-    
-    wins = losses = draws = 0
     recent_matches = []
-    
     for match in user_matches:
         r = (match.result or '').lower()
+        if r == 'pending':
+            continue
         if match.player == username:
-            if r == 'win':
-                wins += 1
-                opponent = match.opponent
-                user_result = 'Win'
-            elif r == 'loss':
-                losses += 1
-                opponent = match.opponent
-                user_result = 'Loss'
-            elif r == 'draw':
-                draws += 1
-                opponent = match.opponent
-                user_result = 'Draw'
-            elif r == 'pending':
-                continue
+            opponent = match.opponent
+            user_result = r.capitalize()
         else:
-            if r == 'loss':
-                wins += 1
-                opponent = match.player
-                user_result = 'Win'
-            elif r == 'win':
-                losses += 1
-                opponent = match.player
-                user_result = 'Loss'
-            elif r == 'draw':
-                draws += 1
-                opponent = match.player
-                user_result = 'Draw'
-            elif r == 'pending':
-                continue
-        
+            opponent = match.player
+            user_result = 'Win' if r == 'loss' else ('Loss' if r == 'win' else 'Draw')
         recent_matches.append({
             'opponent': opponent,
             'result': user_result,
             'date': match.date_played,
             'colour': match.player_colour if match.player == username else ('black' if match.player_colour == 'white' else 'white')
         })
-    
-    total_games = wins + losses + draws
-    win_rate = round((wins / total_games * 100) if total_games > 0 else 0, 1)
-    
-    # Calculate ranking
+
+    # Rank by ELO across all users
     all_users = User.query.all()
-    user_rankings = []
-    for u in all_users:
-        u_matches = Match.query.filter(
-            (Match.player == u.username) | (Match.opponent == u.username)
-        ).all()
-        u_wins = 0
-        for m in u_matches:
-            if m.player == u.username:
-                if (m.result or '').lower() == 'win':
-                    u_wins += 1
-            else:
-                if (m.result or '').lower() == 'loss':
-                    u_wins += 1
-        user_rankings.append((u.username, u_wins))
-    
-    user_rankings.sort(key=lambda x: x[1], reverse=True)
-    user_rank = next((i+1 for i, (u, _) in enumerate(user_rankings) if u == username), len(user_rankings))
-    
-    # Calculate ELO
-    elo = 1200 + (wins * 10) + (win_rate * 2)
-    
+    rankings = sorted([(_player_stats(u.username)['elo'], u.username) for u in all_users], reverse=True)
+    user_rank = next((i + 1 for i, (_, u) in enumerate(rankings) if u == username), len(rankings))
+
     user_stats = {
-        'wins': wins,
-        'losses': losses,
-        'draws': draws,
-        'win_rate': win_rate,
-        'elo': round(elo),
+        'wins': s['wins'],
+        'losses': s['losses'],
+        'draws': s['draws'],
+        'win_rate': s['win_rate'],
+        'elo': s['elo'],
         'ranking': f'#{user_rank}',
         'recent_matches': sorted(recent_matches, key=lambda x: x['date'], reverse=True)[:5]
     }
@@ -707,44 +641,22 @@ def viewstats():
     username = session['username']
     user = User.query.filter_by(username=username).first()
 
+    s = _player_stats(username)
+    wins, losses, draws = s['wins'], s['losses'], s['draws']
+    win_rate = s['win_rate']
+
+    # Compute ranking based on ELO across all users
+    all_users = User.query.all()
+    rankings = sorted(
+        [(_player_stats(u.username)['elo'], u.username) for u in all_users],
+        reverse=True
+    )
+    user_rank = next((i + 1 for i, (_, u) in enumerate(rankings) if u == username), len(rankings) or 1)
+
+    # All matches including upcoming (for display in match history table)
     user_matches = Match.query.filter(
         (Match.player == username) | (Match.opponent == username)
     ).all()
-
-    wins = losses = draws = 0
-    for m in user_matches:
-        r = (m.result or '').lower()
-        if m.player == username:
-            if r == 'win': wins += 1
-            elif r == 'loss': losses += 1
-            elif r == 'draw': draws += 1
-        else:
-            if r == 'loss': wins += 1
-            elif r == 'win': losses += 1
-            elif r == 'draw': draws += 1
-
-    total = wins + losses + draws
-    win_rate = round((wins / total * 100) if total > 0 else 0, 1)
-
-    # Compute simple ranking based on wins across all users
-    all_users = User.query.all()
-    rankings = []
-    for u in all_users:
-        u_matches = Match.query.filter(
-            (Match.player == u.username) | (Match.opponent == u.username)
-        ).all()
-        u_wins = 0
-        for m in u_matches:
-            r = (m.result or '').lower()
-            if m.player == u.username and r == 'win':
-                u_wins += 1
-            elif m.opponent == u.username and r == 'loss':
-                u_wins += 1
-        rankings.append((u.username, u_wins))
-    rankings.sort(key=lambda x: x[1], reverse=True)
-    user_rank = next((i + 1 for i, (u, _) in enumerate(rankings) if u == username), len(rankings) or 1)
-
-    elo = round(1200 + (wins * 10) + (win_rate * 2))
 
     stats = {
         'wins': wins,
@@ -752,7 +664,7 @@ def viewstats():
         'draws': draws,
         'win_rate': win_rate,
         'ranking': f'#{user_rank}',
-        'ELO': elo,
+        'ELO': s['elo'],
     }
 
     # Build ELO history: one data point per completed match in chronological order
@@ -772,6 +684,7 @@ def viewstats():
             if r == 'loss': c_wins += 1
             elif r == 'win': c_losses += 1
             elif r == 'draw': c_draws += 1
+        # Recalculate ELO after each match to capture the rating at that point in time
         c_total = c_wins + c_losses + c_draws
         c_win_rate = (c_wins / c_total * 100) if c_total > 0 else 0
         elo_history.append({
@@ -1069,30 +982,14 @@ def leaderboard():
     all_users = User.query.all()
     players = []
     for u in all_users:
-        matches = Match.query.filter(
-            (Match.player == u.username) | (Match.opponent == u.username)
-        ).all()
-        wins = losses = draws = 0
-        for m in matches:
-            r = (m.result or '').lower()
-            if m.player == u.username:
-                if r == 'win': wins += 1
-                elif r == 'loss': losses += 1
-                elif r == 'draw': draws += 1
-            else:
-                if r == 'loss': wins += 1
-                elif r == 'win': losses += 1
-                elif r == 'draw': draws += 1
-        total = wins + losses + draws
-        win_rate = round((wins / total * 100) if total > 0 else 0, 1)
-        elo = 1200 + (wins * 10) + (win_rate * 2)
+        s = _player_stats(u.username)
         players.append({
             'username': u.username,
-            'wins': wins,
-            'losses': losses,
-            'draws': draws,
-            'win_rate': win_rate,
-            'elo': round(elo)
+            'wins': s['wins'],
+            'losses': s['losses'],
+            'draws': s['draws'],
+            'win_rate': s['win_rate'],
+            'elo': s['elo']
         })
 
     players.sort(key=lambda x: x['elo'], reverse=True)
