@@ -14,18 +14,13 @@
       <button class="nav-link active" id="all-tab" data-bs-toggle="tab" data-bs-target="#all" type="button" role="tab" aria-controls="all" aria-selected="true">All</button>
     </li>
     <li class="nav-item" role="presentation">
-      <button class="nav-link" id="bug-tab" data-bs-toggle="tab" data-bs-target="#bugreport" type="button" role="tab" aria-controls="bugreport" aria-selected="false">Bug report</button>
+      <button class="nav-link" id="bug-tab" data-bs-toggle="tab" data-bs-target="#new" type="button" role="tab" aria-controls="new" aria-selected="false">New</button>
     </li>
     <li class="nav-item" role="presentation">
-      <button class="nav-link" id="feature-tab" data-bs-toggle="tab" data-bs-target="#feature" type="button" role="tab" aria-controls="feature" aria-selected="false">
-        Feature request{% if pending_requests %} ({{ pending_requests|length }}){% endif %}
-      </button>
+      <button class="nav-link" id="feature-tab" data-bs-toggle="tab" data-bs-target="#in_progress" type="button" role="tab" aria-controls="in_progress" aria-selected="false">In progress</button>
     </li>
     <li class="nav-item" role="presentation">
-      <button class="nav-link" id="question-tab" data-bs-toggle="tab" data-bs-target="#question" type="button" role="tab" aria-controls="question" aria-selected="false">Question</button>
-    </li>
-    <li class="nav-item" role="presentation">
-      <button class="nav-link" id="other-tab" data-bs-toggle="tab" data-bs-target="#other" type="button" role="tab" aria-controls="other" aria-selected="false">Other</button>
+      <button class="nav-link" id="question-tab" data-bs-toggle="tab" data-bs-target="#completed" type="button" role="tab" aria-controls="completed" aria-selected="false">Completed</button>
     </li>
   </ul>
 
@@ -33,33 +28,41 @@
   <div class="tab-content" id="myTabContent">
     <!--All queries tab-->
     <div class="tab-pane fade show active" id="all" role="tabpanel" aria-labelledby="all-tab">
+      {%if query|length > 0 %}
       <div class="card card-ui p-3 mt-4">
         <div style="max-height: 340px; overflow-y: auto;">
           <table class="table table-hover mb-0">
             <thead style="position: sticky; top: 0; background: var(--bs-body-bg, #fff); z-index: 1;">
               <tr>
-                <th>Time</th>
+                <th>Date and Time</th>
                 <th>Type</th>
-                <th>Title</th>
-                <th>Description</th>
+                <th class="col-3">Title</th>
+                <th>Status</th>
                 <th>Action</th>
               </tr>
             </thead>
             <tbody>
-              {% for player in friends_leaderboard %}
-              <tr {% if player.username == username %}class="table-active fw-bold"{% endif %}>
-                <td>{{ player.friends_rank }}</td>
-                <td>{{ player.username }}</td>
-                <td>{{ player.elo }}</td>
-                <td>{{ player.win_rate }}%</td>
-                <td><a href="{{ url_for('main.view_user', username=player.username) }}" class="btn btn-sm btn-primary">View</a></td>
-                <td><a href="{{ url_for('main.view_user', username=player.username) }}" class="btn btn-sm btn-danger">Delete</a></td>
+              {% for q in query %}
+              <tr class="table-active">
+                <td>{{ q.created_at.strftime("%d-%m-%Y %H:%m") }}</td>
+                <td>{{ q.issue_type }}</td>
+                <td>{{ q.title }}</td>
                 <td>
-                  {% if player.username == username %}
-                    <button class="btn btn-sm btn-secondary" disabled>You</button>
-                  {% else %}
-                    <a href="{{ url_for('main.view_user', username=player.username) }}" class="btn btn-sm btn-primary">View</a>
-                  {% endif %}
+                  {%if q.status == 'new'%}
+                    <span class="badge bg-info text-dark">{{q.status}}</span>
+                  {%elif q.status == 'in progress'%}
+                    <span class="badge bg-warning text-dark">{{q.status}}</span>
+                  {%else%}
+                    <span class="badge bg-success text-dark">{{q.status}}</span>
+                  {%endif%}
+                </td>
+                <td>
+                  <a href="{{ url_for('main.current_query', id=q.id) }}" class="btn btn-sm btn-primary mr-1">View</a> 
+                  <form method="POST" action="{{ url_for('main.delete_query',id=q.id) }}" class="d-inline"
+                    onsubmit="return confirm('Delete this query?')">
+                    <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  </form>
                 </td>
               </tr>
               {% endfor %}
@@ -67,289 +70,153 @@
           </table>
         </div>
       </div>
+      {%else%}
+      <div class="col-12 mt-4">
+        <div class="alert alert-info text-center">
+          <h5>No queries yet</h5>
+          <p>Have a nice day!</p>
+        </div>
+      </div>
+      {%endif%}
     </div>
 
-    <!--Bug report tab-->
-    <div class="tab-pane fade" id="bugreport" role="tabpanel" aria-labelledby="Bug-tab">
+    <!--New tab-->
+    <div class="tab-pane fade" id="new" role="tabpanel" aria-labelledby="new-tab">
+      {%if new > 0 %}
       <div class="card card-ui p-3 mt-4">
         <div style="max-height: 340px; overflow-y: auto;">
           <table class="table table-hover mb-0">
             <thead style="position: sticky; top: 0; background: var(--bs-body-bg, #fff); z-index: 1;">
               <tr>
-                <th>Time</th>
+                <th>Date and Time</th>
                 <th>Type</th>
-                <th>Title</th>
-                <th>Description</th>
+                <th class="col-3">Title</th>
                 <th>Action</th>
               </tr>
             </thead>
             <tbody>
-              {% for player in friends_leaderboard %}
-              <tr {% if player.username == username %}class="table-active fw-bold"{% endif %}>
-                <td>{{ player.friends_rank }}</td>
-                <td>{{ player.username }}</td>
-                <td>{{ player.elo }}</td>
-                <td>{{ player.win_rate }}%</td>
-                <td><a href="{{ url_for('main.view_user', username=player.username) }}" class="btn btn-sm btn-primary">View</a></td>
-                <td><a href="{{ url_for('main.view_user', username=player.username) }}" class="btn btn-sm btn-danger">Delete</a></td>
-                <td>
-                  {% if player.username == username %}
-                    <button class="btn btn-sm btn-secondary" disabled>You</button>
-                  {% else %}
-                    <a href="{{ url_for('main.view_user', username=player.username) }}" class="btn btn-sm btn-primary">View</a>
-                  {% endif %}
-                </td>
-              </tr>
+              {% for q in query %}
+              {%if q.status == 'new'%}
+                <tr class="table-active">
+                  <td>{{ q.created_at.strftime("%d-%m-%Y %H:%m") }}</td>
+                  <td>{{q.issue_type}}</td>
+                  <td>{{ q.title}}</td>
+                  <td>
+                    <a href="{{ url_for('main.current_query',id=q.id) }}" class="btn btn-sm btn-primary mr-1">View</a> 
+                    <form method="POST" action="{{ url_for('main.delete_query',id=q.id) }}" class="d-inline"
+                      onsubmit="return confirm('Delete this query?')">
+                      <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    </form>
+                  </td>
+                </tr>
+              {%endif%}
               {% endfor %}
             </tbody>
           </table>
         </div>
       </div>
+      {%else%}
+      <div class="col-12 mt-4">
+        <div class="alert alert-info text-center">
+          <h5>No new queries yet</h5>
+          <p>Have a nice day!</p>
+        </div>
+      </div>
+      {%endif%}
     </div>
     
-    <!--Feature tab-->
-    <div class="tab-pane fade" id="feature" role="tabpanel" aria-labelledby="Bug-tab">
+    <!--In progress tab-->
+    <div class="tab-pane fade" id="in_progress" role="tabpanel" aria-labelledby="Feature-tab">
+      {%if in_progress > 0 %}
       <div class="card card-ui p-3 mt-4">
         <div style="max-height: 340px; overflow-y: auto;">
           <table class="table table-hover mb-0">
             <thead style="position: sticky; top: 0; background: var(--bs-body-bg, #fff); z-index: 1;">
               <tr>
-                <th>Time</th>
+                <th>Date and Time</th>
                 <th>Type</th>
-                <th>Title</th>
-                <th>Description</th>
+                <th class="col-3">Title</th>
                 <th>Action</th>
               </tr>
             </thead>
             <tbody>
-              {% for player in friends_leaderboard %}
-              <tr {% if player.username == username %}class="table-active fw-bold"{% endif %}>
-                <td>{{ player.friends_rank }}</td>
-                <td>{{ player.username }}</td>
-                <td>{{ player.elo }}</td>
-                <td>{{ player.win_rate }}%</td>
-                <td><a href="{{ url_for('main.view_user', username=player.username) }}" class="btn btn-sm btn-primary">View</a></td>
-                <td><a href="{{ url_for('main.view_user', username=player.username) }}" class="btn btn-sm btn-danger">Delete</a></td>
-              </tr>
+              {% for q in query %}
+              {%if q.status == 'in progress'%}
+                <tr class="table-active">
+                  <td>{{ q.created_at.strftime("%d-%m-%Y %H:%m") }}</td>
+                  <td>{{ q.issue_type }}</td>
+                  <td>{{ q.title}}</td>
+                  <td>
+                    <a href="{{ url_for('main.current_query',id=q.id) }}" class="btn btn-sm btn-primary mr-1">View</a> 
+                    <form method="POST" action="{{ url_for('main.delete_query',id=q.id) }}" class="d-inline"
+                      onsubmit="return confirm('Delete this query?')">
+                      <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    </form>
+                  </td>
+              {%endif%}
               {% endfor %}
             </tbody>
           </table>
         </div>
       </div>
+      {%else%}
+      <div class="col-12 mt-4">
+        <div class="alert alert-info text-center">
+          <h5>No in progress queries yet</h5>
+          <p>Have a nice day!</p>
+        </div>
+      </div>
+      {%endif%}
     </div>
 
-    <!--question tab-->
-    <div class="tab-pane fade" id="question" role="tabpanel" aria-labelledby="Bug-tab">
+    <!--Completed tab-->
+    <div class="tab-pane fade" id="completed" role="tabpanel" aria-labelledby="Question-tab">
+      {%if completed > 0 %}
       <div class="card card-ui p-3 mt-4">
         <div style="max-height: 340px; overflow-y: auto;">
-          <table class="table table-hover mb-0">
-            <thead style="position: sticky; top: 0; background: var(--bs-body-bg, #fff); z-index: 1;">
-              <tr>
-                <th>Time</th>
-                <th>Type</th>
-                <th>Title</th>
-                <th>Description</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for player in friends_leaderboard %}
-              <tr {% if player.username == username %}class="table-active fw-bold"{% endif %}>
-                <td>{{ player.friends_rank }}</td>
-                <td>{{ player.username }}</td>
-                <td>{{ player.elo }}</td>
-                <td>{{ player.win_rate }}%</td>
-                <td><a href="{{ url_for('main.view_user', username=player.username) }}" class="btn btn-sm btn-primary">View</a></td>
-                <td><a href="{{ url_for('main.view_user', username=player.username) }}" class="btn btn-sm btn-danger">Delete</a></td>
-              </tr>
-              {% endfor %}
+            <table class="table table-hover mb-0">
+              <thead style="position: sticky; top: 0; background: var(--bs-body-bg, #fff); z-index: 1;">
+                <tr>
+                  <th>Date and Time</th>
+                  <th>Type</th>
+                  <th class="col-3">Title</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for q in query %}
+                {%if q.status == 'completed'%}
+                  <tr class="table-active">
+                    <td>{{ q.created_at.strftime("%d-%m-%Y %H:%m") }}</td>
+                    <td>{{ q.title}}</td>
+                    <td>{{ q.issue_type }}</td>
+                    <td>
+                      <a href="{{ url_for('main.current_query',id=q.id) }}" class="btn btn-sm btn-primary mr-1">View</a> 
+                      <form method="POST" action="{{ url_for('main.delete_query',id=q.id) }}" class="d-inline"
+                        onsubmit="return confirm('Delete this query?')">
+                        <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                      </form>
+                    </td>
+                {%endif%}
+                {% endfor %}
             </tbody>
           </table>
         </div>
       </div>
-    </div>
-
-    <!--other tab-->
-    <div class="tab-pane fade" id="other" role="tabpanel" aria-labelledby="Bug-tab">
-      <div class="card card-ui p-3 mt-4">
-        <div style="max-height: 340px; overflow-y: auto;">
-          <table class="table table-hover mb-0">
-            <thead style="position: sticky; top: 0; background: var(--bs-body-bg, #fff); z-index: 1;">
-              <tr>
-                <th>Time</th>
-                <th>Type</th>
-                <th>Title</th>
-                <th>Description</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for player in friends_leaderboard %}
-              <tr {% if player.username == username %}class="table-active fw-bold"{% endif %}>
-                <td>{{ player.friends_rank }}</td>
-                <td>{{ player.username }}</td>
-                <td>{{ player.elo }}</td>
-                <td>{{ player.win_rate }}%</td>
-                <td><a href="{{ url_for('main.view_user', username=player.username) }}" class="btn btn-sm btn-primary">View</a></td>
-                <td><a href="{{ url_for('main.view_user', username=player.username) }}" class="btn btn-sm btn-danger">Delete</a></td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
+      {%else%}
+      <div class="col-12 mt-4">
+        <div class="alert alert-info text-center">
+          <h5>No completed queries yet</h5>
+          <p>Have a nice day!</p>
         </div>
       </div>
+      {%endif%}
     </div>
   </div>
 </div>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const input = document.getElementById('friendUsername');
-    const resultsList = document.getElementById('searchResults');
-    const selectedDiv = document.getElementById('selectedUser');
-    const selectedUsernameEl = document.getElementById('selectedUsername');
-    const viewProfileBtn = document.getElementById('viewProfileBtn');
-    const sendRequestBtn = document.getElementById('sendRequestBtn');
-    const resultDiv = document.getElementById('addFriendResult');
-    const modal = document.getElementById('addFriendModal');
-
-    let searchTimer = null;
-
-    // Live search as user types
-    input.addEventListener('input', function() {
-        const q = input.value.trim();
-        selectedDiv.style.display = 'none';
-        resultDiv.style.display = 'none';
-
-        if (!q) {
-            resultsList.style.display = 'none';
-            resultsList.innerHTML = '';
-            return;
-        }
-
-        clearTimeout(searchTimer);
-        searchTimer = setTimeout(function() {
-            fetch('/search_users?q=' + encodeURIComponent(q))
-                .then(r => r.json())
-                .then(users => {
-                    resultsList.innerHTML = '';
-                    if (users.length === 0) {
-                        resultsList.innerHTML = '<li class="list-group-item text-muted">No users found</li>';
-                    } else {
-                        users.forEach(function(username) {
-                            const li = document.createElement('li');
-                            li.className = 'list-group-item list-group-item-action';
-                            li.style.cursor = 'pointer';
-                            li.textContent = username;
-                            li.addEventListener('click', function() {
-                                selectUser(username);
-                            });
-                            resultsList.appendChild(li);
-                        });
-                    }
-                    resultsList.style.display = 'block';
-                });
-        }, 300);
-    });
-
-    // Hide dropdown when clicking outside
-    document.addEventListener('click', function(e) {
-        if (!input.contains(e.target) && !resultsList.contains(e.target)) {
-            resultsList.style.display = 'none';
-        }
-    });
-
-    function selectUser(username) {
-        input.value = username;
-        resultsList.style.display = 'none';
-        selectedUsernameEl.textContent = username;
-        viewProfileBtn.href = '/view_user/' + encodeURIComponent(username);
-        selectedDiv.style.display = 'block';
-        resultDiv.style.display = 'none';
-    }
-
-    // Send friend request for selected user
-    sendRequestBtn.addEventListener('click', function() {
-        const username = selectedUsernameEl.textContent;
-        fetch('/send_friend_request', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ target_username: username })
-        })
-        .then(r => r.json())
-        .then(data => {
-            showResult(data.message, data.success ? 'success' : 'danger');
-            if (data.success) {
-                setTimeout(function() {
-                    bootstrap.Modal.getInstance(modal).hide();
-                }, 1500);
-            }
-        })
-        .catch(function() {
-            showResult('An error occurred. Please try again.', 'danger');
-        });
-    });
-
-    function showResult(message, type) {
-        resultDiv.className = 'alert alert-' + type + ' mt-2';
-        resultDiv.textContent = message;
-        resultDiv.style.display = 'block';
-    }
-
-    // Reset modal on close
-    modal.addEventListener('hidden.bs.modal', function() {
-        input.value = '';
-        resultsList.style.display = 'none';
-        resultsList.innerHTML = '';
-        selectedDiv.style.display = 'none';
-        resultDiv.style.display = 'none';
-    });
-
-    // Handle accept/decline friend requests
-    document.addEventListener('click', function(e) {
-        if (e.target.classList.contains('accept-request')) {
-            handleFriendRequest(e.target.dataset.friendshipId, 'accept');
-        } else if (e.target.classList.contains('decline-request')) {
-            handleFriendRequest(e.target.dataset.friendshipId, 'decline');
-        }
-    });
-
-    function handleFriendRequest(friendshipId, action) {
-        fetch('/respond_friend_request', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ friendship_id: friendshipId, action: action })
-        })
-        .then(r => r.json())
-        .then(data => {
-            if (data.success) {
-                location.reload();
-            } else {
-                alert(data.message || 'An error occurred');
-            }
-        })
-        .catch(function() {
-            alert('An error occurred. Please try again.');
-        });
-    }
-});
-</script>
-
-<style>
-body {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-
-.container {
-  flex: 1;
-}
-
-footer {
-  margin-top: auto;
-}
-</style>
 
 {% include '.footer.html' %}
 {% endblock %}

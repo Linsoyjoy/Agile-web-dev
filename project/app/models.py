@@ -48,6 +48,6 @@ class Queries(db.Model):
     issue_type = db.Column(db.String(20), nullable=False, default='other')
     title = db.Column(db.String(100), nullable=False)
     description = db.Column(db.String(1000), nullable=True)
-    priority = db.Column(db.String(20), nullable=False, default='none')
-    status = db.Column(db.String(20), nullable=False, default ='in progress') #in progress, completed, unresolved
+    status = db.Column(db.String(20), nullable=False, default ='new') #new, in progress, completed
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    notes = db.Column(db.String(1000), nullable=True)

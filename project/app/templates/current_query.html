@@ -1,0 +1,89 @@
+{% extends ".header.html" %}
+{% block title %}Submit Issue - Chessmate{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+  <div class="row justify-content-center">
+    <div class="col-md-9">
+
+      <div class="card card-ui">
+        <div class="card-body mx-2">
+          <!--Description of query-->
+          <div class="mt-1">
+            <p><strong>Email:</strong>
+              {%if query.email%}
+                {{query.email}}
+              {%else%}
+                None
+              {%endif%}
+            </p>
+            <p><strong>Type:</strong> {{query.issue_type}}</p>
+            <p><strong>Title:</strong></p>
+            <p>{{query.title}}</p>
+            <p><strong>Description:</strong></p>
+            <p>{{query.description}}</p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card card-ui">
+        <div class="card-body mx-2">
+          <form method="POST", action="{{ url_for('main.update_query',id=query.id) }}">
+            <input type= "hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class ="row">
+              <div class=" col-4 mb-3">
+                <label for="issue_type" class="form-label">Status</label>
+                <select class="form-select" id="issue_status" name="issue_status" required>
+                  <option value="new">{{query.status}}</option>
+                  {% if query.status == 'new'%}
+                    <option value="in progress">in progress</option>
+                    <option value="completed">completed</option>
+                  {% elif query.status == 'in progress'%}
+                    <option value="new">new</option>
+                    <option value="completed">completed</option>
+                  {%else%}
+                    <option value="new">new</option>
+                    <option value="in progress">in progress</option>
+                  {%endif%}
+                  </select>
+              </div>
+            </div>
+
+            <!--Navbar for notes and reply tab-->
+            <ul class="nav nav-tabs">
+              <li class="nav-item" role="notes">
+                <button class="nav-link active" id="notes-tab" data-bs-toggle="tab" data-bs-target="#notes" type="button" role="tab" aria-controls="notes" aria-selected="true">Notes</button>
+              </li>
+              <li class="nav-item" role="reply">
+                <button class="nav-link" id="reply-tab" data-bs-toggle="tab" data-bs-target="#reply" type="button" role="tab" aria-controls="reply" aria-selected="false">Reply</button>
+              </li>
+            </ul>
+            <!--Navbar content-->
+            <div class="tab-content" id="myTabContent">
+              <!--Notes-->
+              <div class="tab-pane fade show active" id="notes" role="tabpanel" aria-labelledby="notes-tab">
+                <div class="my-3">
+                  <textarea class="form-control" id="notes" name="notes" rows="6" placeholder="Write down some notes about the issue (max. 1000 characters)">{{ query.notes }}</textarea>
+                </div>
+              </div>
+              <!--Reply email-->
+              <div class="tab-pane fade" id="reply" role="tabpanel" aria-labelledby="reply-tab">
+                <div class="my-3">
+                  <textarea class="form-control" id="email" name="email" rows="6" placeholder="Write a reply to the sender's email (max. 1000 characters)"></textarea>
+                </div>
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary">Save changes</button>
+          </form>
+          <form method="POST" action="{{ url_for('main.delete_query',id=query.id) }}" class="d-inline"
+            onsubmit="return confirm('Delete this query?')">
+            <button type="submit" class="btn btn-danger mt-2">Delete query</button>
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% include '.footer.html' %}
+{% endblock %}

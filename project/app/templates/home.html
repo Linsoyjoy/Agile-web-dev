@@ -80,10 +80,11 @@
           </div>
           {% endfor %}
         </div>
+        <a href="{{ url_for('main.viewstats') }}" class="btn btn-sm btn-outline-primary mt-2">View all matches</a>
         {% else %}
         <p class="text-muted">No completed matches yet. Start playing and recording your games to see your recent activity here!</p>
+        <a href="{{ url_for('main.viewstats') }}" class="btn btn-sm btn-outline-primary mt-2">View my stats</a>
         {% endif %}
-        <a href="{{ url_for('main.viewstats') }}" class="btn btn-sm btn-outline-primary mt-2">View all matches</a>
       </div>
 
       <!-- Quick Stats -->
