@@ -1,8 +1,0 @@
-.claude/
-.DS_Store
-__pycache__/
-addnewrecord.html
-app2.py
-.venv/
-*.pyc
-project/app/static/images/profiles/
