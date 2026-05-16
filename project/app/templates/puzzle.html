@@ -1,0 +1,118 @@
+{% extends ".header.html" %}
+{% block title %}Daily Puzzle - Chessmate{% endblock %}
+
+{% block extra_head %}
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css">
+  <style>
+    #board { max-width: 480px; }
+    .theme-badge { font-size: 0.75rem; }
+    .solution-move { font-family: monospace; font-size: 1rem; }
+  </style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-5" style="margin-bottom: 40px;">
+  <div class="d-flex align-items-center gap-3 mb-3">
+    <h2 class="mb-0">Daily Puzzle</h2>
+    <span class="badge bg-secondary">Rating: {{ rating }}</span>
+    <a href="https://lichess.org/training/{{ puzzle_id }}" target="_blank" rel="noopener"
+       class="btn btn-sm btn-outline-secondary ms-auto">Play on Lichess</a>
+  </div>
+
+  {% if players %}
+  <p class="text-muted small mb-2">
+    From the game:
+    {% for p in players %}
+      <strong>{{ p.name }}</strong> ({{ p.rating }}){% if not loop.last %} vs {% endif %}
+    {% endfor %}
+  </p>
+  {% endif %}
+
+  <div class="row g-4">
+    <div class="col-md-6">
+      <div id="board"></div>
+      <p class="mt-2 text-muted small">
+        {{ 'Black' if side_to_move == 'b' else 'White' }} to move
+        {% if last_move %}&mdash; last move: <code>{{ last_move }}</code>{% endif %}
+      </p>
+    </div>
+
+    <div class="col-md-6">
+      <div class="card p-3 mb-3">
+        <h6 class="mb-2">Themes</h6>
+        <div class="d-flex flex-wrap gap-1">
+          {% for theme in themes %}
+            <span class="badge bg-primary theme-badge">{{ theme }}</span>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="card p-3">
+        <h6 class="mb-2">Solution</h6>
+        <div id="solution-hidden">
+          <button class="btn btn-sm btn-outline-primary" onclick="revealSolution()">Reveal solution</button>
+        </div>
+        <div id="solution-moves" class="d-none">
+          <ol class="mb-2" id="move-list"></ol>
+          <button class="btn btn-sm btn-outline-secondary" onclick="replayMoves()">Replay on board</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% include '.footer.html' %}
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+<script>
+  const fen = {{ fen | tojson }};
+  const solutionUci = {{ solution | tojson }};
+  const orientation = {{ 'black' | tojson if side_to_move == 'b' else 'white' | tojson }};
+
+  const board = Chessboard('board', {
+    position: fen,
+    orientation: orientation,
+    pieceTheme: 'https://cdn.jsdelivr.net/npm/@chrisoakman/chessboardjs@1.0.0/img/chesspieces/wikipedia/{piece}.png',
+  });
+
+  // Convert UCI moves (e.g. "f5d3") to SAN using chess.js
+  function uciToSan(uciMoves, startFen) {
+    const game = new Chess(startFen);
+    const san = [];
+    for (const uci of uciMoves) {
+      const from = uci.slice(0, 2), to = uci.slice(2, 4), promo = uci[4];
+      const move = game.move({ from, to, promotion: promo || 'q' });
+      if (move) san.push(move.san);
+    }
+    return san;
+  }
+
+  function revealSolution() {
+    const sanMoves = uciToSan(solutionUci, fen);
+    const list = document.getElementById('move-list');
+    sanMoves.forEach((m, i) => {
+      const li = document.createElement('li');
+      li.className = 'solution-move';
+      li.textContent = m;
+      list.appendChild(li);
+    });
+    document.getElementById('solution-hidden').classList.add('d-none');
+    document.getElementById('solution-moves').classList.remove('d-none');
+  }
+
+  function replayMoves() {
+    const game = new Chess(fen);
+    board.position(fen, false);
+    let i = 0;
+    const interval = setInterval(() => {
+      if (i >= solutionUci.length) { clearInterval(interval); return; }
+      const uci = solutionUci[i++];
+      game.move({ from: uci.slice(0, 2), to: uci.slice(2, 4), promotion: uci[4] || 'q' });
+      board.position(game.fen(), true);
+    }, 900);
+  }
+</script>
+{% endblock %}

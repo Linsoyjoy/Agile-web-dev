@@ -9,7 +9,7 @@
     <button class="btn btn-secondary btn-lg" data-bs-toggle="modal" data-bs-target="#addFriendModal">Add friend</button><br>
   </div>
 
-  <!-- Add Friend Modal -->
+  <!-- Add Friend Modal — live username search with send-request button -->
   <div class="modal fade" id="addFriendModal" tabindex="-1" aria-labelledby="addFriendModalLabel" aria-hidden="true">
     <div class="modal-dialog">
       <div class="modal-content">
@@ -18,18 +18,26 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
+
+          <!-- Search input with live dropdown results populated via AJAX -->
           <div class="mb-3 position-relative">
             <label for="friendUsername" class="form-label">Search by username</label>
             <input type="text" class="form-control" id="friendUsername" name="friendUsername"
                    placeholder="Start typing a username..." autocomplete="off">
-            <ul id="searchResults" class="list-group position-absolute w-100 z-3" style="display:none; top:100%; max-height:220px; overflow-y:auto;"></ul>
+            <ul id="searchResults" class="list-group position-absolute w-100 z-3"
+                style="display:none; top:100%; max-height:220px; overflow-y:auto;"></ul>
           </div>
+
+          <!-- Shown after a user is selected from the search dropdown -->
           <div id="selectedUser" style="display:none;">
             <p class="mb-2">Selected: <strong id="selectedUsername"></strong></p>
             <a id="viewProfileBtn" href="#" class="btn btn-sm btn-outline-primary me-2">View Profile</a>
             <button type="button" class="btn btn-sm btn-success" id="sendRequestBtn">Send Friend Request</button>
           </div>
+
+          <!-- AJAX result message — shows success or error feedback -->
           <div id="addFriendResult" class="alert mt-2" style="display:none;"></div>
+
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -38,24 +46,29 @@
     </div>
   </div>
 
-  <!--Tab headers-->
+  <!-- Tab headers — Friends, Leaderboard, Pending requests -->
   <ul class="nav nav-tabs mt-4" id="myTab" role="tablist">
     <li class="nav-item" role="presentation">
-      <button class="nav-link active" id="friends-tab" data-bs-toggle="tab" data-bs-target="#friends" type="button" role="tab" aria-controls="friends" aria-selected="true">Friends</button>
+      <button class="nav-link active" id="friends-tab" data-bs-toggle="tab"
+              data-bs-target="#friends" type="button" role="tab" aria-controls="friends" aria-selected="true">Friends</button>
     </li>
     <li class="nav-item" role="presentation">
-      <button class="nav-link" id="leaderboard-tab" data-bs-toggle="tab" data-bs-target="#leaderboard" type="button" role="tab" aria-controls="leaderboard" aria-selected="false">Leaderboard</button>
+      <button class="nav-link" id="leaderboard-tab" data-bs-toggle="tab"
+              data-bs-target="#leaderboard" type="button" role="tab" aria-controls="leaderboard" aria-selected="false">Leaderboard</button>
     </li>
     <li class="nav-item" role="presentation">
-      <button class="nav-link" id="pending-tab" data-bs-toggle="tab" data-bs-target="#pending" type="button" role="tab" aria-controls="pending" aria-selected="false">
+      <!-- Shows count badge when there are pending requests -->
+      <button class="nav-link" id="pending-tab" data-bs-toggle="tab"
+              data-bs-target="#pending" type="button" role="tab" aria-controls="pending" aria-selected="false">
         Pending requests{% if pending_requests %} ({{ pending_requests|length }}){% endif %}
       </button>
     </li>
   </ul>
 
-  <!--Content of each tabs-->
+  <!-- Tab content panels -->
   <div class="tab-content" id="myTabContent">
-    <!--Friends tab-->
+
+    <!-- Friends tab — card grid of accepted friends with stats -->
     <div class="tab-pane fade show active" id="friends" role="tabpanel" aria-labelledby="friends-tab">
       <div class="row mt-4">
         {% for friend in current_friends %}
@@ -69,6 +82,7 @@
           </div>
         </div>
         {% endfor %}
+
         {% if current_friends|length == 0 %}
         <div class="col-12">
           <div class="alert alert-info text-center">
@@ -80,10 +94,12 @@
       </div>
     </div>
 
-    <!--Leaderboard tab-->
+    <!-- Leaderboard tab — ranks the current user and their friends by ELO -->
     <div class="tab-pane fade" id="leaderboard" role="tabpanel" aria-labelledby="leaderboard-tab">
       <div class="card card-ui p-3 mt-4">
         <p class="text-muted mb-2">Showing rankings among you and your friends.</p>
+
+        <!-- Scrollable table with sticky header -->
         <div style="max-height: 340px; overflow-y: auto;">
           <table class="table table-hover mb-0">
             <thead style="position: sticky; top: 0; background: var(--bs-body-bg, #fff); z-index: 1;">
@@ -97,6 +113,7 @@
             </thead>
             <tbody>
               {% for player in friends_leaderboard %}
+              <!-- Highlight the current user's row -->
               <tr {% if player.username == username %}class="table-active fw-bold"{% endif %}>
                 <td>{{ player.friends_rank }}</td>
                 <td>{{ player.username }}</td>
@@ -114,6 +131,7 @@
             </tbody>
           </table>
         </div>
+
         {% if friends_leaderboard|length <= 1 %}
         <div class="text-center py-4">
           <p class="text-muted">Add friends to see how you compare!</p>
@@ -121,8 +139,8 @@
         {% endif %}
       </div>
     </div>
-    
-    <!--Pending requests tab-->
+
+    <!-- Pending requests tab — accept or decline incoming friend requests -->
     <div class="tab-pane fade" id="pending" role="tabpanel" aria-labelledby="pending-tab">
       <div class="card card-ui p-3 mt-4">
         {% if pending_requests %}
@@ -132,6 +150,7 @@
               <h6 class="mb-1">{{ request.requester_id }} wants to be your friend</h6>
               <small class="text-muted">Sent {{ request.created_at.strftime('%b %d, %Y') if request.created_at else 'recently' }}</small>
             </div>
+            <!-- Buttons post to /respond_friend_request via AJAX -->
             <div>
               <button class="btn btn-sm btn-success accept-request" data-friendship-id="{{ request.id }}">Accept</button>
               <button class="btn btn-sm btn-outline-danger decline-request" data-friendship-id="{{ request.id }}">Decline</button>
@@ -145,6 +164,7 @@
         {% endif %}
       </div>
     </div>
+
   </div>
 </div>
 
@@ -161,7 +181,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     let searchTimer = null;
 
-    // Live search as user types
+    // Live search — debounced 300 ms after the user stops typing
     input.addEventListener('input', function() {
         const q = input.value.trim();
         selectedDiv.style.display = 'none';
@@ -187,6 +207,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             li.className = 'list-group-item list-group-item-action';
                             li.style.cursor = 'pointer';
                             li.textContent = username;
+                            // Clicking a result selects that user
                             li.addEventListener('click', function() {
                                 selectUser(username);
                             });
@@ -198,13 +219,14 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 300);
     });
 
-    // Hide dropdown when clicking outside
+    // Hide dropdown when clicking anywhere outside the input or results list
     document.addEventListener('click', function(e) {
         if (!input.contains(e.target) && !resultsList.contains(e.target)) {
             resultsList.style.display = 'none';
         }
     });
 
+    // Populate the selected user panel and wire up the profile link
     function selectUser(username) {
         input.value = username;
         resultsList.style.display = 'none';
@@ -214,7 +236,7 @@ document.addEventListener('DOMContentLoaded', function() {
         resultDiv.style.display = 'none';
     }
 
-    // Send friend request for selected user
+    // Send friend request via AJAX for the currently selected user
     sendRequestBtn.addEventListener('click', function() {
         const username = selectedUsernameEl.textContent;
         fetch('/send_friend_request', {
@@ -225,6 +247,7 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(r => r.json())
         .then(data => {
             showResult(data.message, data.success ? 'success' : 'danger');
+            // Auto-close modal after a successful request
             if (data.success) {
                 setTimeout(function() {
                     bootstrap.Modal.getInstance(modal).hide();
@@ -236,13 +259,14 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
+    // Display a coloured result banner inside the modal
     function showResult(message, type) {
         resultDiv.className = 'alert alert-' + type + ' mt-2';
         resultDiv.textContent = message;
         resultDiv.style.display = 'block';
     }
 
-    // Reset modal on close
+    // Reset all modal state when it is closed
     modal.addEventListener('hidden.bs.modal', function() {
         input.value = '';
         resultsList.style.display = 'none';
@@ -251,7 +275,7 @@ document.addEventListener('DOMContentLoaded', function() {
         resultDiv.style.display = 'none';
     });
 
-    // Handle accept/decline friend requests
+    // Delegate accept/decline clicks on pending request buttons
     document.addEventListener('click', function(e) {
         if (e.target.classList.contains('accept-request')) {
             handleFriendRequest(e.target.dataset.friendshipId, 'accept');
@@ -260,6 +284,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
+    // POST accept or decline action to the server and reload on success
     function handleFriendRequest(friendshipId, action) {
         fetch('/respond_friend_request', {
             method: 'POST',
@@ -282,6 +307,7 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 <style>
+/* Ensure the footer stays at the bottom when content is short */
 body {
   min-height: 100vh;
   display: flex;

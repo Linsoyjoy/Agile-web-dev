@@ -1,4 +1,6 @@
+import json
 import os
+import urllib.request
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
@@ -8,6 +10,7 @@ from .blueprints import main
 from .models import User, Tournament, Match, Friendship, Queries
 from .forgot_password import reset_password_email
 from datetime import datetime
+
 
 def _player_stats(username):
     """Calculate wins/losses/draws/win_rate/elo for a given user."""
@@ -34,6 +37,7 @@ def _player_stats(username):
     return {'wins': wins, 'losses': losses, 'draws': draws, 'win_rate': win_rate, 'elo': elo}
 
 
+# Inject the logged-in user's profile picture into every template context
 @main.context_processor
 def inject_profile_pic():
     if 'username' in session:
@@ -42,6 +46,8 @@ def inject_profile_pic():
             return {'profile_pic': user.profile_pic}
     return {'profile_pic': None}
 
+
+# Handle profile picture uploads — saves the file and updates the user record
 @main.route('/upload_profile_pic', methods=['POST'])
 def upload_profile_pic():
     if 'username' not in session:
@@ -64,30 +70,32 @@ def upload_profile_pic():
     flash('Profile picture updated!', 'success')
     return redirect(url_for('main.profile'))
 
+
 @main.route('/')
 def home():
     if 'username' not in session:
         return render_template('landing.html')
-    
+
     username = session['username']
     privilege = User.query.get(username)
-    
+
     # Get user's latest match (could be completed or upcoming)
     latest_match = Match.query.filter(
         (Match.player == username) | (Match.opponent == username)
     ).order_by(Match.date_played.desc()).first()
-    
+
     # Get all upcoming matches in date order
     upcoming_matches = Match.query.filter(
         (Match.player == username) | (Match.opponent == username),
         Match.result == 'pending'
     ).order_by(Match.date_played.asc()).all()
-    
+
     # Get user's overall stats
     user_matches = Match.query.filter(
         (Match.player == username) | (Match.opponent == username)
     ).all()
-    
+
+    # Count wins/losses/draws from the user's perspective (they may be player or opponent)
     wins = losses = draws = 0
     for match in user_matches:
         r = (match.result or '').lower()
@@ -111,16 +119,16 @@ def home():
             elif r == 'pending':
                 # Skip upcoming matches from stats calculation
                 continue
-    
+
     total_games = wins + losses + draws
     win_rate = round((wins / total_games * 100) if total_games > 0 else 0, 1)
-    
+
     # Get recent activity (last 3 completed matches)
     recent_matches = Match.query.filter(
         (Match.player == username) | (Match.opponent == username),
         Match.result != 'pending'
     ).order_by(Match.date_played.desc()).limit(3).all()
-    
+
     return render_template('home.html', 
                          username=username, 
                          latest_match=latest_match,
@@ -128,19 +136,21 @@ def home():
                          stats={'wins': wins, 'losses': losses, 'draws': draws, 'win_rate': win_rate},
                          recent_matches=recent_matches, user=privilege)
 
+
+# Friends page — shows accepted friends, a friends-only leaderboard, and pending requests
 @main.route('/friends')
 def friends():
     if 'username' not in session:
         flash('Please log in to access this page!', 'error')
         return redirect(url_for('main.login'))
-    
+
     current_user = session['username']
     privilege = User.query.get(current_user)
-    
+
     # Get all users and calculate their rankings
     all_users = User.query.all()
     players = []
-    
+
     for u in all_users:
         s = _player_stats(u.username)
         players.append({
@@ -152,28 +162,28 @@ def friends():
             'elo': s['elo'],
             'is_current_user': u.username == current_user
         })
-    
+
     # Sort by ELO (descending) and assign ranks
     players.sort(key=lambda x: x['elo'], reverse=True)
     for i, player in enumerate(players):
         player['rank'] = i + 1
-    
+
     # Get pending friend requests
     pending_requests = Friendship.query.filter_by(addressee_id=current_user, status='pending').all()
-    
+
     # Get current friends
     current_friends = []
     friendships = Friendship.query.filter(
         ((Friendship.requester_id == current_user) | (Friendship.addressee_id == current_user)) &
         (Friendship.status == 'accepted')
     ).all()
-    
+
     for friendship in friendships:
         if friendship.requester_id == current_user:
             friend_username = friendship.addressee_id
         else:
             friend_username = friendship.requester_id
-        
+
         # Get friend's stats
         friend_user = User.query.filter_by(username=friend_username).first()
         if friend_user:
@@ -186,8 +196,8 @@ def friends():
                 'win_rate': s['win_rate'],
                 'elo': s['elo']
             })
-    
-    # Build friends-only leaderboard (current user + accepted friends)
+
+    # Build friends-only leaderboard — includes current user so they can see where they rank
     friend_usernames = {f['username'] for f in current_friends}
     friend_usernames.add(current_user)
     friends_leaderboard = [p for p in players if p['username'] in friend_usernames]
@@ -195,77 +205,81 @@ def friends():
         p['friends_rank'] = i + 1
 
     return render_template('friends.html', username=current_user, players=players,
-                         pending_requests=pending_requests, current_friends=current_friends,
-                         friends_leaderboard=friends_leaderboard, user=privilege)
+                           pending_requests=pending_requests, current_friends=current_friends,
+                           friends_leaderboard=friends_leaderboard, user=privilege)
 
+
+# AJAX — search for a user by username and redirect to their profile
 @csrf.exempt
 @main.route('/add_friend', methods=['POST'])
 def add_friend():
     if 'username' not in session:
         return jsonify({'success': False, 'message': 'Please log in to access this page!'})
-    
+
     try:
         data = request.get_json()
         if not data:
             return jsonify({'success': False, 'message': 'Invalid request data!'})
-        
+
         friend_username = data.get('friend_username', '').strip()
         current_user = session['username']
-        
+
         if not friend_username:
             return jsonify({'success': False, 'message': 'Please enter a username!'})
-        
+
         # Check if user exists
         friend_user = User.query.filter_by(username=friend_username).first()
         if not friend_user:
             return jsonify({'success': False, 'message': 'User not found!'})
-        
+
         # Check if trying to add self
         if friend_username == current_user:
             return jsonify({'success': False, 'message': 'You cannot add yourself as a friend!'})
-        
+
         # For now, just return success and redirect to view user profile
         # In a real implementation, you would add friend relationships to database
         return jsonify({
-            'success': True, 
+            'success': True,
             'message': f'Successfully found user: {friend_username}! Redirecting to their profile...',
             'redirect': f'/view_user/{friend_username}'
         })
-        
+
     except Exception as e:
         return jsonify({'success': False, 'message': 'An error occurred. Please try again.'})
 
+
+# AJAX — create a new friend request between the current user and a target user
 @csrf.exempt
 @main.route('/send_friend_request', methods=['POST'])
 def send_friend_request():
     if 'username' not in session:
         return jsonify({'success': False, 'message': 'Please log in to access this page!'})
-    
+
     try:
         data = request.get_json()
         if not data:
             return jsonify({'success': False, 'message': 'Invalid request data!'})
-        
+
         target_username = data.get('target_username', '').strip()
         current_user = session['username']
-        
+
         if not target_username:
             return jsonify({'success': False, 'message': 'Invalid target user!'})
-        
+
         if target_username == current_user:
             return jsonify({'success': False, 'message': 'You cannot send a friend request to yourself!'})
-        
+
         # Check if target user exists
         target_user = User.query.filter_by(username=target_username).first()
         if not target_user:
             return jsonify({'success': False, 'message': 'User not found!'})
-        
+
         # Check if friendship already exists
         existing_friendship = Friendship.query.filter(
             ((Friendship.requester_id == current_user) & (Friendship.addressee_id == target_username)) |
             ((Friendship.requester_id == target_username) & (Friendship.addressee_id == current_user))
         ).first()
-        
+
         if existing_friendship:
             if existing_friendship.status == 'accepted':
                 return jsonify({'success': False, 'message': 'You are already friends!'})
@@ -282,7 +296,7 @@ def send_friend_request():
                 existing_friendship.updated_at = datetime.utcnow()
                 db.session.commit()
                 return jsonify({'success': True, 'message': 'Friend request sent successfully!'})
-        
+
         # Create new friend request
         new_friendship = Friendship(
             requester_id=current_user,
@@ -291,105 +305,111 @@ def send_friend_request():
         )
         db.session.add(new_friendship)
         db.session.commit()
-        
+
         return jsonify({'success': True, 'message': 'Friend request sent successfully!'})
-        
+
     except Exception as e:
         return jsonify({'success': False, 'message': 'An error occurred. Please try again.'})
 
+
+# AJAX — accept or decline a pending friend request
 @csrf.exempt
 @main.route('/respond_friend_request', methods=['POST'])
 def respond_friend_request():
     if 'username' not in session:
         return jsonify({'success': False, 'message': 'Please log in to access this page!'})
-    
+
     try:
         data = request.get_json()
         if not data:
             return jsonify({'success': False, 'message': 'Invalid request data!'})
-        
+
         friendship_id = data.get('friendship_id')
         action = data.get('action')  # 'accept' or 'decline'
         current_user = session['username']
-        
+
         if not friendship_id or action not in ['accept', 'decline']:
             return jsonify({'success': False, 'message': 'Invalid request parameters!'})
-        
+
         friendship = Friendship.query.get(friendship_id)
         if not friendship:
             return jsonify({'success': False, 'message': 'Friend request not found!'})
-        
+
         if friendship.addressee_id != current_user:
             return jsonify({'success': False, 'message': 'You cannot respond to this friend request!'})
-        
+
         friendship.status = 'accepted' if action == 'accept' else 'declined'
         friendship.updated_at = datetime.utcnow()
         db.session.commit()
-        
+
         action_text = 'accepted' if action == 'accept' else 'declined'
         return jsonify({'success': True, 'message': f'Friend request {action_text}!'})
-        
+
     except Exception as e:
         return jsonify({'success': False, 'message': 'An error occurred. Please try again.'})
 
+
+# AJAX — remove an accepted friendship between the current user and a target user
 @csrf.exempt
 @main.route('/remove_friend', methods=['POST'])
 def remove_friend():
     if 'username' not in session:
         return jsonify({'success': False, 'message': 'Please log in to access this page!'})
-    
+
     try:
         data = request.get_json()
         if not data:
             return jsonify({'success': False, 'message': 'Invalid request data!'})
-        
+
         target_username = data.get('target_username', '').strip()
         current_user = session['username']
-        
+
         if not target_username:
             return jsonify({'success': False, 'message': 'Invalid target user!'})
-        
+
         # Find and remove friendship
         friendship = Friendship.query.filter(
             ((Friendship.requester_id == current_user) & (Friendship.addressee_id == target_username)) |
             ((Friendship.requester_id == target_username) & (Friendship.addressee_id == current_user))
         ).filter_by(status='accepted').first()
-        
+
         if not friendship:
             return jsonify({'success': False, 'message': 'You are not friends with this user!'})
-        
+
         db.session.delete(friendship)
         db.session.commit()
-        
+
         return jsonify({'success': True, 'message': 'Friend removed successfully!'})
-        
+
     except Exception as e:
         return jsonify({'success': False, 'message': 'An error occurred. Please try again.'})
 
+
+# View another user's public profile — shows their stats and friendship status
 @main.route('/view_user/<username>')
 def view_user(username):
     if 'username' not in session:
         flash('Please log in to access this page!', 'error')
         return redirect(url_for('main.login'))
-    
+
     user = User.query.filter_by(username=username).first()
     if not user:
         flash('User not found!', 'error')
         return redirect(url_for('main.friends'))
-    
+
     current_user = session['username']
-    
+
     # Check friendship status
     friendship_status = None
     friendship = None
-    
+
     if current_user != username:
         # Check if there's any friendship between these users
         friendship = Friendship.query.filter(
             ((Friendship.requester_id == current_user) & (Friendship.addressee_id == username)) |
             ((Friendship.requester_id == username) & (Friendship.addressee_id == current_user))
         ).first()
-        
+
         if friendship:
             if friendship.status == 'accepted':
                 friendship_status = 'friends'
@@ -405,7 +425,7 @@ def view_user(username):
                     friendship_status = 'not_friends'
         else:
             friendship_status = 'not_friends'
-    
+
     s = _player_stats(username)
 
     # Build recent match list for display (completed matches only)
@@ -444,33 +464,35 @@ def view_user(username):
         'ranking': f'#{user_rank}',
         'recent_matches': sorted(recent_matches, key=lambda x: x['date'], reverse=True)[:5]
     }
-    
+
     return render_template('view_user.html', user=user, stats=user_stats, current_user=current_user, 
                          friendship_status=friendship_status, friendship=friendship)
 
+
+# Profile page — shows the logged-in user's own stats, recent matches and weaknesses
 @main.route('/profile')
 def profile():
     if 'username' not in session:
         flash('Please log in to access this page!', 'error')
         return redirect(url_for('main.login'))
-    
+
     username = session['username']
     user = User.query.filter_by(username=username).first()
-    
+
     if not user:
         flash('User not found!', 'error')
         return redirect(url_for('main.login'))
-    
+
     # Calculate real statistics from match data
     user_matches = Match.query.filter(
         (Match.player == username) | (Match.opponent == username)
     ).all()
-    
+
     wins = 0
     losses = 0
     draws = 0
     recent_matches = []
-    
+
     for match in user_matches:
         # Determine if user is player1 or player2 and get result
         r = (match.result or '').lower()
@@ -506,7 +528,7 @@ def profile():
             elif r == 'pending':
                 # Skip upcoming matches from stats calculation
                 continue
-        
+
         colour = match.player_colour if match.player == username else ('black' if match.player_colour.lower() == 'white' else 'white')
 
         # Add to recent matches
@@ -516,15 +538,15 @@ def profile():
             'date': match.date_played,
             'colour': colour.capitalize()
         })
-    
+
     # Sort recent matches by date (most recent first) and take last 3
     recent_matches = sorted(recent_matches, 
                           key=lambda x: x['date'],
                           reverse=True)[:3]
-    
+
     total_games = wins + losses + draws
     win_rate = round((wins / total_games * 100) if total_games > 0 else 0, 1)
-    
+
     # Calculate ranking based on total wins (simple implementation)
     all_users = User.query.all()
     user_rankings = []
@@ -541,10 +563,10 @@ def profile():
                 if (m.result or '').lower() == 'loss':
                     u_wins += 1
         user_rankings.append((u.username, u_wins))
-    
+
     user_rankings.sort(key=lambda x: x[1], reverse=True)
     user_rank = next((i+1 for i, (u, _) in enumerate(user_rankings) if u == username), len(user_rankings))
-    
+
     # Calculate colour-specific stats from the user's perspective
     white_wins = white_losses = white_draws = 0
     black_wins = black_losses = black_draws = 0
@@ -580,7 +602,7 @@ def profile():
     black_total = black_wins + black_losses + black_draws
     white_win_rate = round((white_wins / white_total * 100) if white_total > 0 else 0, 1)
     black_win_rate = round((black_wins / black_total * 100) if black_total > 0 else 0, 1)
-    
+
     user_stats = {
         'wins': wins,
         'losses': losses,
@@ -601,6 +623,8 @@ def profile():
 
     return render_template('profile.html', user=user, stats=user_stats, username=username)
 
+
+# Save the user's self-entered weaknesses text to the database
 @main.route('/save_weaknesses', methods=['POST'])
 def save_weaknesses():
     if 'username' not in session:
@@ -611,6 +635,69 @@ def save_weaknesses():
     flash('Notes saved!', 'success')
     return redirect(url_for('main.profile'))
 
+
+# Save the user's linked external chess platform usernames
+@main.route('/save_platforms', methods=['POST'])
+def save_platforms():
+    if 'username' not in session:
+        return redirect(url_for('main.login'))
+    user = User.query.filter_by(username=session['username']).first()
+    user.chesscom_username = request.form.get('chesscom_username', '').strip() or None
+    user.lichess_username = request.form.get('lichess_username', '').strip() or None
+    user.fide_id = request.form.get('fide_id', '').strip() or None
+    db.session.commit()
+    flash('Platform accounts updated!', 'success')
+    return redirect(url_for('main.profile'))
+
+
+# AJAX — fetch live ratings from chess.com and lichess for the logged-in user
+@main.route('/fetch_ratings')
+@csrf.exempt
+def fetch_ratings():
+    if 'username' not in session:
+        return jsonify({'error': 'Not logged in'}), 401
+
+    user = User.query.filter_by(username=session['username']).first()
+    ratings = {}
+
+    if user.chesscom_username:
+        try:
+            url = f'https://api.chess.com/pub/player/{user.chesscom_username}/stats'
+            req = urllib.request.Request(url, headers={'User-Agent': 'ChessMate/1.0'})
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                data = json.loads(resp.read())
+            ratings['chesscom'] = {
+                'username': user.chesscom_username,
+                'rapid': data.get('chess_rapid', {}).get('last', {}).get('rating'),
+                'blitz': data.get('chess_blitz', {}).get('last', {}).get('rating'),
+                'bullet': data.get('chess_bullet', {}).get('last', {}).get('rating'),
+            }
+        except Exception:
+            ratings['chesscom'] = {'username': user.chesscom_username, 'error': True}
+
+    if user.lichess_username:
+        try:
+            url = f'https://lichess.org/api/user/{user.lichess_username}'
+            req = urllib.request.Request(url, headers={'User-Agent': 'ChessMate/1.0'})
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                data = json.loads(resp.read())
+            perfs = data.get('perfs', {})
+            ratings['lichess'] = {
+                'username': user.lichess_username,
+                'rapid': perfs.get('rapid', {}).get('rating'),
+                'blitz': perfs.get('blitz', {}).get('rating'),
+                'bullet': perfs.get('bullet', {}).get('rating'),
+            }
+        except Exception:
+            ratings['lichess'] = {'username': user.lichess_username, 'error': True}
+
+    if user.fide_id:
+        ratings['fide'] = {'id': user.fide_id}
+
+    return jsonify(ratings)
+
+
+# AJAX — exact username lookup used by the new record form to check if an opponent is on ChessMate
 @main.route('/lookup_user')
 def lookup_user():
     username = request.args.get('username', '').strip()
@@ -619,6 +706,8 @@ def lookup_user():
     user = User.query.filter_by(username=username).first()
     return jsonify({'found': bool(user)})
 
+
+# AJAX — partial username search used by the friends search dropdown
 @main.route('/search_users')
 def search_users():
     q = request.args.get('q', '').strip()
@@ -632,6 +721,8 @@ def search_users():
     results = query.limit(8).all()
     return jsonify([u.username for u in results])
 
+
+# Stats page — shows the user's overall stats, ELO, ranking and full match history
 @main.route('/viewstats')
 def viewstats():
     if 'username' not in session:
@@ -667,7 +758,7 @@ def viewstats():
         'ELO': s['elo'],
     }
 
-    # Build ELO history: one data point per completed match in chronological order
+    # Build ELO history — one data point per completed match in chronological order for the graph
     sorted_matches = sorted(
         [m for m in user_matches if (m.result or '').lower() in ('win', 'loss', 'draw')],
         key=lambda m: m.date_played
@@ -695,9 +786,12 @@ def viewstats():
     my_matches = Match.query.filter(
         (Match.player == username) | (Match.opponent == username)
     ).order_by(Match.date_played.desc()).all()
+
     return render_template('viewstats.html', username=username, user=user, stats=stats,
                            matches=my_matches, elo_history=elo_history)
 
+
+# Calendar page — displays all the user's matches as FullCalendar events, colour-coded by result
 @main.route('/calendar')
 def calendar():
     if 'username' not in session:
@@ -764,6 +858,8 @@ def calendar():
         # Handle case where tables don't exist or no data
         return render_template('calendar.html', matches=[], events=[], username=session['username'], user=privilege)
 
+
+# Login — accepts either username or email combined with password
 @main.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -772,7 +868,7 @@ def login():
         if not username or not password:
             flash('Please enter both username and password!', 'error')
             return render_template('login.html')
-    
+
         #Check if a valid username was entered
         user = User.query.filter_by(username=username).first()
         if user:
@@ -784,8 +880,7 @@ def login():
                 #The username was valid but password incorrect
                 flash('Invalid username or password!', 'error')
 
-
-        #Username was not valid, check if it's an email instead 
+        #Username was not valid, check if it's an email instead
         else:
             user = User.query.filter_by(email=username).first()
             if user and check_password_hash(user.password_hash, password):
@@ -795,15 +890,17 @@ def login():
             else:
                 #Either password was incorrect or email not to valid user
                 flash('Invalid username or password!', 'error')
-    
+
     return render_template('login.html')
 
+
+# New record — form for logging a past match or scheduling an upcoming one
 @main.route('/new_record', methods=['GET', 'POST'])
 def new_record():
     if 'username' not in session:
         flash('Please log in to access this page!', 'error')
         return redirect(url_for('main.login'))
-    
+
     username = session['username']
     privilege = User.query.get(username)
 
@@ -817,28 +914,28 @@ def new_record():
             result = request.form.get('result', '').strip()
             colour = request.form.get('colour', '').strip()
             date_played_str = request.form.get('date_played', '').strip()
-            
+
             # Validate required fields
             if not opponent or not result or not colour or not date_played_str:
                 flash('Please fill in all required fields!', 'error')
                 return render_template('new_record.html')
-            
+
             # Parse date
             date_played = datetime.strptime(date_played_str, '%Y-%m-%d').date()
-            
+
             # Handle optional fields based on match type
             game_record = request.form.get('game_record', '').strip()
             termination = request.form.get('termination', '').strip()
             time_played = request.form.get('time_played', '').strip()
             opening = request.form.get('opening', '').strip()
-            
+
             # For upcoming matches, set default values
             if match_type == 'upcoming':
                 termination = 'upcoming'
                 game_record = ''
-            
+
             date_created = datetime.now()
-            
+
             # Combine date and time if time is provided
             if time_played:
                 try:
@@ -848,7 +945,7 @@ def new_record():
                     date_played = datetime.combine(date_played, datetime.min.time())
             else:
                 date_played = datetime.combine(date_played, datetime.min.time())
-            
+
         except ValueError as e:
             flash(f'Invalid date format: {str(e)}', 'error')
             return render_template('new_record.html')
@@ -868,7 +965,7 @@ def new_record():
         )
         db.session.add(record)
         db.session.commit()
-        
+
         if match_type == 'upcoming':
             flash('Match scheduled successfully!', 'success')
         else:
@@ -877,6 +974,8 @@ def new_record():
 
     return render_template('new_record.html', user=privilege)
 
+
+# Edit match — only the user who originally recorded the match can edit it
 @main.route('/match/<int:match_id>/edit', methods=['GET', 'POST'])
 def edit_match(match_id):
     if 'username' not in session:
@@ -922,6 +1021,7 @@ def edit_match(match_id):
     return render_template('edit_match.html', match=match, user=privilege)
 
 
+# Delete match — only the user who recorded it can delete it
 @main.route('/match/<int:match_id>/delete', methods=['POST'])
 def delete_match(match_id):
     if 'username' not in session:
@@ -938,12 +1038,14 @@ def delete_match(match_id):
     flash('Match deleted.', 'success')
     return redirect(url_for('main.viewstats'))
 
+
+# Query/support page — lets users submit an issue report which is saved to the database
 @main.route('/query', methods=['GET', 'POST'])
 def query():
     if 'username' not in session:
         flash('Please log in to access this page!', 'error')
         return redirect(url_for('main.login'))
-    
+
     username = session['username']
     privilege = User.query.get(username)
 
@@ -953,8 +1055,12 @@ def query():
         title = request.form['title']
         description = request.form['description']
         timestamp = datetime.today()
+<<<<<<< HEAD
         status = 'new'
         
+=======
+
+>>>>>>> dcd73ae3d5241aa17a76dd9204d7722f43b9f70b
         #Create a new query and store in database
         new_query = Queries(email=email, issue_type=issue_type, title=title, description=description, created_at=timestamp, status=status)
         db.session.add(new_query)
@@ -964,6 +1070,8 @@ def query():
 
     return render_template('query.html', username=username, user=privilege)
 
+
+# FAQ page — static page, passes user object for nav bar if logged in
 @main.route('/faq', methods=['GET', 'POST'])
 def faq():
     if 'username' in session:
@@ -972,6 +1080,8 @@ def faq():
         return render_template('faq.html', user=privilege)
     return render_template('faq.html')
 
+
+# Leaderboard — ranks all ChessMate users by ELO, excludes pending matches from calculations
 @main.route('/leaderboard')
 def leaderboard():
     if 'username' not in session:
@@ -996,6 +1106,46 @@ def leaderboard():
     players.sort(key=lambda x: x['elo'], reverse=True)
     return render_template('leaderboard.html', players=players, username=username, user=privilege)
 
+
+# Daily puzzle — fetches today's puzzle from the lichess API and renders an interactive board
+@main.route('/puzzle')
+def daily_puzzle():
+    if 'username' not in session:
+        flash('Please log in to access this page.', 'warning')
+        return redirect(url_for('main.login'))
+
+    username = session['username']
+    privilege = User.query.get(username)
+
+    try:
+        req = urllib.request.Request(
+            'https://lichess.org/api/puzzle/daily',
+            headers={'User-Agent': 'ChessMate/1.0'}
+        )
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            data = json.loads(resp.read())
+        puzzle = data['puzzle']
+        game = data['game']
+    except Exception:
+        flash('Could not load the daily puzzle. Try again later.', 'danger')
+        return redirect(url_for('main.home'))
+
+    side_to_move = puzzle['fen'].split()[1]  # 'w' or 'b'
+    return render_template('puzzle.html',
+        user=privilege,
+        username=username,
+        fen=puzzle['fen'],
+        solution=puzzle['solution'],
+        themes=puzzle['themes'],
+        rating=puzzle['rating'],
+        puzzle_id=puzzle['id'],
+        last_move=puzzle.get('lastMove', ''),
+        side_to_move=side_to_move,
+        players=game.get('players', []),
+    )
+
+
+# Head-to-head — shows win/loss/draw breakdown and match history between two specific users
 @main.route('/h2h')
 def h2h():
     if 'username' not in session:
@@ -1069,14 +1219,18 @@ def h2h():
         }
 
     return render_template('h2h.html', username=me, opponent=opponent_name,
-                           all_users=all_users, stats=stats, matches=matches_display,user=privilege)
+                           all_users=all_users, stats=stats, matches=matches_display, user=privilege)
 
+
+# Logout — clears the session and redirects to the landing page
 @main.route('/logout')
 def logout():
     session.pop('username', None)
     flash('You have been logged out!', 'success')
     return redirect(url_for('main.home'))
 
+
+# Signup — validates the new account details and creates a user record
 @main.route('/signup', methods=['GET', 'POST'])
 def signup():
     if request.method == 'POST':
@@ -1084,32 +1238,34 @@ def signup():
         email = request.form['email']
         password = request.form['password']
         confirm_password = request.form['confirm_password']
-        
+
         if password != confirm_password:
             flash('Passwords do not match!', 'error')
             return render_template('signup.html')
-        
+
         if len(password) < 6:
             flash('Password must be at least 6 characters long!', 'error')
             return render_template('signup.html')
-        
+
         if User.query.filter_by(username=username).first():
             flash('Username already taken, please choose another!', 'error')
             return render_template('signup.html')
-        
+
         if User.query.filter_by(email=email).first():
             flash('Email already registered!', 'error')
             return render_template('signup.html')
-        
+
         password_hash = generate_password_hash(password)
-        new_user = User(username=username, email=email, password_hash=password_hash )
+        new_user = User(username=username, email=email, password_hash=password_hash)
         db.session.add(new_user)
         db.session.commit()
         flash('Account created successfully! Please log in.', 'success')
         return redirect(url_for('main.login'))
-    
+
     return render_template('signup.html')
 
+
+# Forgot password — three-step flow: enter email, verify code, set new password
 @main.route('/forgotpassword', methods=['GET', 'POST'])
 def forgotpassword():
     if 'resetstep' not in session:
@@ -1144,9 +1300,8 @@ def forgotpassword():
                     session['resetstep'] = 1
                     session.pop('resetcode', None)
                     flash('Invalid verification code! Please try again.', 'error')
-
                     return redirect(url_for('main.forgotpassword'))
-        
+
         elif session['resetstep'] == 3:
             if request.form.get('Password') and request.form.get('Confirm_Password'):
                 password = request.form.get('Password')
@@ -1181,14 +1336,17 @@ def forgotpassword():
     else:
         return render_template('forgotpassword.html', resetstep = session['resetstep'])
 
+
+# Admin dashboard — only accessible to users with is_admin flag set to True
 @main.route('/Dashboard')
 def admin_dashboard():
     if 'username' not in session:
         flash('Please log in to access this page!', 'error')
         return redirect(url_for('main.login'))
-    
+
     username = session['username']
     privilege = User.query.get(username)
+<<<<<<< HEAD
     
     #Get 10 of the latest queries
     latest_query = Queries.query.order_by(Queries.created_at.desc()).limit(10)
@@ -1209,6 +1367,19 @@ def admin_dashboard():
     if privilege.is_admin:
         return render_template('home_admin.html', username=username, new_count = new_query_count,
                                latest=latest_query, new=new,
+=======
+
+    #Get latest queries and number of queries received today
+    latest_query = Queries.query.all()
+    unresolved = Queries.query.filter_by(status ='unresolved').all()
+    in_progress = Queries.query.filter_by(status = 'in progress').all()
+    completed = Queries.query.filter_by(status = 'completed').all()
+
+    #Check if the current account is an admin account, otherwise deny access to page
+    if privilege.is_admin:
+        return render_template('home_admin.html', username=username,
+                               query=latest_query, unresolved=unresolved,
+>>>>>>> dcd73ae3d5241aa17a76dd9204d7722f43b9f70b
                                in_progress=in_progress, completed=completed,
                                user=privilege, bug=bug, feature=feature,
                                question=question, other=other)
@@ -1216,15 +1387,17 @@ def admin_dashboard():
         flash("sorry, you must be an admin to access this page!",'error')
         return redirect(url_for('main.home'))
 
+
+# View queries — admin-only page showing all submitted support queries grouped by type
 @main.route('/Viewqueries')
 def view_queries():
     if 'username' not in session:
         flash('Please log in to access this page!', 'error')
         return redirect(url_for('main.login'))
-    
+
     username = session['username']
     privilege = User.query.get(username)
-    
+
     #Get latest queries and number of queries received today
     queries = Queries.query.order_by(Queries.created_at.desc()).all()
     new = Queries.query.filter_by(status ='new').count()
