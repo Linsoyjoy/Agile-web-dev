@@ -4,6 +4,7 @@
 {% block content %}
 <div class="container mt-5">
 
+  <!-- Profile header — avatar with inline edit button, username, email and share action -->
   <div class="profile-header d-flex align-items-center gap-4">
     <div class="position-relative">
       {% if profile_pic %}
@@ -11,6 +12,7 @@
              id="pic-preview" class="rounded-circle border border-secondary"
              width="90" height="90" style="object-fit:cover;" alt="Profile">
       {% else %}
+        <!-- Fallback initials avatar shown until a picture is uploaded -->
         <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center text-white fw-bold"
              id="pic-initials" style="width:90px;height:90px;font-size:36px;">
           {{ user.username[0].upper() }}
@@ -18,6 +20,7 @@
         <img id="pic-preview" class="rounded-circle border border-secondary d-none"
              width="90" height="90" style="object-fit:cover;" alt="Profile">
       {% endif %}
+      <!-- Pencil button submits the hidden file input immediately on change -->
       <form method="POST" action="{{ url_for('main.upload_profile_pic') }}" enctype="multipart/form-data" id="pic-form">
         <label class="position-absolute bottom-0 end-0 btn btn-sm btn-light rounded-circle p-1 mb-0"
                style="width:28px;height:28px;cursor:pointer;" title="Change photo">
@@ -36,6 +39,7 @@
   </div>
 
   <div class="row mt-4">
+    <!-- Recent matches — last 3 completed matches with result badge, colour, and link to stats -->
     <div class="col-md-6">
       <div class="card p-3">
         <h5>Recent Matches</h5>
@@ -54,6 +58,7 @@
         <a href="{{ url_for('main.viewstats') }}" class="btn btn-sm btn-outline-primary mt-2">View all matches</a>
       </div>
     </div>
+    <!-- Performance by colour — win rates calculated from the user's perspective -->
     <div class="col-md-6">
       <div class="card p-3">
         <h5>Performance by Colour</h5>
@@ -65,6 +70,7 @@
     </div>
   </div>
 
+  <!-- Identified weaknesses — free-text field the user fills in manually, not auto-generated -->
   <div class="card mt-4 p-3">
     <h5>Identified Weaknesses</h5>
     <form method="POST" action="{{ url_for('main.save_weaknesses') }}">
@@ -74,10 +80,12 @@
     </form>
   </div>
 
+  <!-- Connected accounts — links Chess.com, Lichess and FIDE profiles; ratings fetched via AJAX on page load -->
   <div class="card mt-4 p-3">
     <h5>Connected Accounts</h5>
     <form method="POST" action="{{ url_for('main.save_platforms') }}">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <!-- Chess.com username — ratings displayed below the input after fetch -->
       <div class="mb-3">
         <label class="form-label fw-semibold">
           <img src="https://www.chess.com/favicon.ico" width="16" height="16" class="me-1" alt=""> Chess.com username
@@ -86,6 +94,7 @@
                value="{{ user.chesscom_username or '' }}" placeholder="e.g. hikaru">
         <div id="chesscom-ratings" class="mt-1 text-muted small"></div>
       </div>
+      <!-- Lichess username — ratings displayed below the input after fetch -->
       <div class="mb-3">
         <label class="form-label fw-semibold">
           <img src="https://lichess.org/favicon.ico" width="16" height="16" class="me-1" alt=""> Lichess username
@@ -94,6 +103,7 @@
                value="{{ user.lichess_username or '' }}" placeholder="e.g. DrNykterstein">
         <div id="lichess-ratings" class="mt-1 text-muted small"></div>
       </div>
+      <!-- FIDE ID — renders a link to the player's FIDE profile page -->
       <div class="mb-3">
         <label class="form-label fw-semibold">FIDE ID</label>
         <input type="text" class="form-control" name="fide_id"
@@ -151,6 +161,7 @@
     window.location.href = '/leaderboard';
   }
 
+  // Build a readable rating string from rapid/blitz/bullet fields
   function formatRatings(data) {
     const parts = [];
     if (data.rapid)  parts.push(`Rapid: ${data.rapid}`);
@@ -159,6 +170,7 @@
     return parts.length ? parts.join(' · ') : 'No rated games found';
   }
 
+  // Fetch live ratings from Chess.com and Lichess APIs via the /fetch_ratings route
   fetch('/fetch_ratings')
     .then(r => r.json())
     .then(data => {
@@ -176,12 +188,13 @@
           : formatRatings(data.lichess);
         if (!data.lichess.error) el.classList.replace('text-muted', 'text-success');
       }
+      // FIDE ID renders as a direct link to the player's FIDE profile page
       if (data.fide) {
         const el = document.getElementById('fide-link');
         el.innerHTML = `<a href="https://ratings.fide.com/profile/${data.fide.id}" target="_blank" rel="noopener">View FIDE profile →</a>`;
       }
     })
-    .catch(() => {});
+    .catch(() => {});  // Silently ignore network errors — ratings are non-critical
 
   </script>
 {% endblock %}

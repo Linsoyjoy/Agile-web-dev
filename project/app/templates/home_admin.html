@@ -7,6 +7,8 @@
     <h1>Hello, {{ username }}!</h1>
     <h4>Check out all the latest queries that were sent!</h4>
   </div>
+
+  <!-- Query status summary — counts of unresolved, in-progress and completed tickets -->
   <div class="card p-3 mt-4">
     <h4>Quick Stats</h4>
     <div class="row text-center">
@@ -24,35 +26,35 @@
       </div>
     </div>
   </div>
-  
-  <!--Latest queries-->
+
+  <!-- Latest queries — single card or horizontally scrollable row depending on count -->
   <div class="card p-3 mt-4">
     <h1>Latest Queries</h1>
     {% if query %}
-          {% if query|length == 1 %}
-            <!-- Single match display -->
-            {% set query = query[0] %}
-            <div class="latest-match-info p-3 rounded" style="background-color: #6c757d; color: white; width: fit-content; max-width: 100%;">
-              <p><strong>Type: {{ query.issue_type }}</strong></p>
-              <p>Title: {{ query.title }}</p>
+      {% if query|length == 1 %}
+        <!-- Single query display -->
+        {% set query = query[0] %}
+        <div class="latest-match-info p-3 rounded" style="background-color: #6c757d; color: white; width: fit-content; max-width: 100%;">
+          <p><strong>Type: {{ query.issue_type }}</strong></p>
+          <p>Title: {{ query.title }}</p>
+          <p>Status:
+            <span class="badge bg-warning text-dark">{{query.status}}</span>
+          </p>
+        </div>
+      {% else %}
+        <!-- Multiple queries with horizontal scroll -->
+        <div class="upcoming-matches-scroll">
+          {% for q in query %}
+            <div class="latest-match-info p-3 rounded me-3" style="background-color: #6c757d; color: white; width: fit-content; min-width: 250px; flex-shrink: 0;">
+              <p><strong>Type: {{ q.issue_type }}</strong></p>
+              <p>Title: {{ q.title }}</p>
               <p>Status:
-                <span class="badge bg-warning text-dark">{{query.status}}</span>
+                <span class="badge bg-warning text-dark">{{q.status}}</span>
               </p>
             </div>
-          {% else %}
-            <!-- Multiple matches with horizontal scroll -->
-            <div class="upcoming-matches-scroll">
-              {% for q in query %}
-                <div class="latest-match-info p-3 rounded me-3" style="background-color: #6c757d; color: white; width: fit-content; min-width: 250px; flex-shrink: 0;">
-                  <p><strong>Type: {{ q.issue_type }}</strong></p>
-                  <p>Title: {{ q.title }}</p>
-                  <p>Status:
-                    <span class="badge bg-warning text-dark">{{q.status}}</span>
-                  </p>
-                </div>
-              {% endfor %}
-            </div>
-          {% endif %}
+          {% endfor %}
+        </div>
+      {% endif %}
     {%else%}
       <p>No queries yet</p>
     {%endif%}

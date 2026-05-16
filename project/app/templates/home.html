@@ -9,7 +9,8 @@
   </div>
   
   <div class="row mt-4" style="margin-bottom: 40px;">
-    <!--features-->
+
+    <!-- Left column — feature shortcut cards linking to key pages -->
     <div class="col-md-4">
       <div class="card feature-card p-3 text-center">
         <h5>Game Tracking</h5>
@@ -27,8 +28,11 @@
         <a href="{{url_for('main.friends')}}" class="btn btn-secondary btn-lg btn-block">Find players</a>
       </div>
     </div>
-    <!--Recent matches and stats-->
+
+    <!-- Right column — upcoming matches, recent activity, and quick stats -->
     <div class="col-md-8">
+
+      <!-- Upcoming matches — single card or horizontally scrollable row depending on count -->
       <div class="card p-3">
         <h1>Upcoming Matches</h1>
         {% if upcoming_matches %}
@@ -62,8 +66,8 @@
           <p>No upcoming matches scheduled. <a href="{{ url_for('main.new_record') }}">Schedule a match!</a></p>
         {% endif %}
       </div>
-      
-      <!-- Recent Activity -->
+
+      <!-- Recent activity — last 3 completed matches with colour-coded result badges -->
       <div class="card p-3 mt-3">
         <h4>Recent Activity</h4>
         {% if recent_matches %}
@@ -86,7 +90,7 @@
         <a href="{{ url_for('main.viewstats') }}" class="btn btn-sm btn-outline-primary mt-2">View all matches</a>
       </div>
 
-      <!-- Quick Stats -->
+      <!-- Quick stats — overall win/loss/draw counts and win rate -->
       <div class="card p-3 mt-4">
         <h4>Quick Stats</h4>
         <div class="row text-center">
@@ -108,6 +112,7 @@
           <small>Win Rate</small>
         </div>
       </div>
+
     </div>
   </div>
 </div>

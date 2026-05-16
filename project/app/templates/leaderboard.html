@@ -11,6 +11,7 @@
   <h4 class="section-title">Player Rankings</h4>
   <div class="row mt-4">
     <div class="col-12">
+      <!-- Scrollable rankings table — current user's row is highlighted, others link to H2H page -->
       <div class="card card-ui p-3">
         <div style="max-height: 350px; overflow-y: auto;">
           <table class="table table-hover mb-0">
@@ -29,6 +30,7 @@
               <tr {% if player.username == username %}class="table-active fw-bold"{% endif %}>
                 <td class="rank-cell" data-rank="{{ loop.index }}">#{{ loop.index }}</td>
                 <td>
+                  <!-- Other players link to the head-to-head page for that matchup -->
                   {% if player.username != username %}
                   <a href="{{ url_for('main.h2h', opponent=player.username) }}" class="text-decoration-none">{{ player.username }}</a>
                   {% else %}
@@ -41,6 +43,7 @@
                 <td>{{ player.draws }}</td>
               </tr>
               {% else %}
+              <!-- Fallback placeholder rows shown when no users exist in the database -->
               <tr>
                 <td class="rank-cell" data-rank="1">#1</td>
                 <td>Magnus Carlsen</td>
@@ -72,6 +75,7 @@
 
 {% block scripts %}
 <script>
+  // Replace rank numbers with medal emojis for the top 3 positions
   const medals = { 1: '🥇', 2: '🥈', 3: '🥉' };
   document.querySelectorAll('.rank-cell').forEach(cell => {
     const rank = parseInt(cell.dataset.rank);
