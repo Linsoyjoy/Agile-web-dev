@@ -1314,7 +1314,7 @@ def view_queries():
     privilege = User.query.get(username)
     
     #Get latest queries and number of queries received today
-    queries = Queries.query.all
+    queries = Queries.query.all()
     bug_query = Queries.query.filter_by(issue_type = 'bug').all()
     feature_query = Queries.query.filter_by(issue_type = 'feature').all()
     question_query = Queries.query.filter_by(issue_type = 'question').all()
