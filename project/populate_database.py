@@ -14,10 +14,10 @@ with app.app_context():
     
     # Create sample users
     users = [
-        User(username='alice', email='alice@example.com', password_hash=generate_password_hash('password123'), is_admin=False),
-        User(username='bob', email='bob@example.com', password_hash=generate_password_hash('password123'), is_admin=False),
-        User(username='charlie', email='charlie@example.com', password_hash=generate_password_hash('password123'), is_admin=False),
-        User(username='admin', email='admin@example.com', password_hash=generate_password_hash('adminpassword123'), is_admin=True)
+        User(username='alice', email='alice@example.com', password_hash=generate_password_hash('password123', method='pbkdf2:sha256'), is_admin=False),
+        User(username='bob', email='bob@example.com', password_hash=generate_password_hash('password123', method='pbkdf2:sha256'), is_admin=False),
+        User(username='charlie', email='charlie@example.com', password_hash=generate_password_hash('password123', method='pbkdf2:sha256'), is_admin=False),
+        User(username='admin', email='admin@example.com', password_hash=generate_password_hash('adminpassword123', method='pbkdf2:sha256'), is_admin=True)
     ]
 
     

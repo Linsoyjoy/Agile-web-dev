@@ -34,7 +34,7 @@ class ChessMateUnitTestCase(unittest.TestCase):
 
     def test_signup_existing_username(self):
         # Create existing user
-        existing_user = User(username='existinguser', email='unique.email@example.com', password_hash=generate_password_hash('password123'))
+        existing_user = User(username='existinguser', email='unique.email@example.com', password_hash=generate_password_hash('password123', method='pbkdf2:sha256'))
         db.session.add(existing_user)
         db.session.commit()
         # Post to signup route with same username but different email
@@ -51,7 +51,7 @@ class ChessMateUnitTestCase(unittest.TestCase):
 
     def test_signup_existing_email(self):
         # Create existing user
-        existing_user = User(username='uniqueusername', email='existingemail@example.com', password_hash=generate_password_hash('password123'))
+        existing_user = User(username='uniqueusername', email='existingemail@example.com', password_hash=generate_password_hash('password123', method='pbkdf2:sha256'))
         db.session.add(existing_user)
         db.session.commit()
         # Post to signup route with same email but different username
@@ -82,7 +82,7 @@ class ChessMateUnitTestCase(unittest.TestCase):
     def test_login(self):
         # Create user to log in
         client =  self.app.test_client()
-        user = User(username='testuser', email='testuser@example.com', password_hash=generate_password_hash('password123'))
+        user = User(username='testuser', email='testuser@example.com', password_hash=generate_password_hash('password123', method='pbkdf2:sha256'))
         db.session.add(user)
         db.session.commit()
         # Post to login route with correct credentials
@@ -110,7 +110,7 @@ class ChessMateUnitTestCase(unittest.TestCase):
     def test_login_wrong_password(self):
         # Create user to log in
         client = self.app.test_client()
-        user = User(username='testuser', email='testuser@example.com', password_hash=generate_password_hash('password123'))
+        user = User(username='testuser', email='testuser@example.com', password_hash=generate_password_hash('password123', method='pbkdf2:sha256'))
         db.session.add(user)
         db.session.commit()
         # Post to login route with wrong password
@@ -138,7 +138,7 @@ class ChessMateUnitTestCase(unittest.TestCase):
     def test_logout(self):
         # Create user and log in
         client = self.app.test_client()
-        user = User(username='testuser', email='testuser@example.com', password_hash=generate_password_hash('password123'))
+        user = User(username='testuser', email='testuser@example.com', password_hash=generate_password_hash('password123', method='pbkdf2:sha256'))
         db.session.add(user)
         db.session.commit()
         # Log in
@@ -164,7 +164,7 @@ class ChessMateUnitTestCase(unittest.TestCase):
     def test_adding_new_record(self):
         # Create new user
         client = self.app.test_client()
-        user = User(username='testuser', email='testuser@example.com', password_hash=generate_password_hash('password123'))
+        user = User(username='testuser', email='testuser@example.com', password_hash=generate_password_hash('password123', method='pbkdf2:sha256'))
         db.session.add(user)
         db.session.commit()
         

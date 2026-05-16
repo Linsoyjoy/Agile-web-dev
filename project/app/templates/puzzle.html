@@ -31,10 +31,7 @@
   <div class="row g-4">
     <div class="col-md-6">
       <div id="board"></div>
-      <p class="mt-2 text-muted small">
-        {{ 'Black' if side_to_move == 'b' else 'White' }} to move
-        {% if last_move %}&mdash; last move: <code>{{ last_move }}</code>{% endif %}
-      </p>
+      <p class="mt-2 text-muted small">{{ 'Black' if side_to_move == 'b' else 'White' }} to move</p>
     </div>
 
     <div class="col-md-6">
@@ -75,8 +72,20 @@
   const board = Chessboard('board', {
     position: fen,
     orientation: orientation,
-    pieceTheme: 'https://cdn.jsdelivr.net/npm/@chrisoakman/chessboardjs@1.0.0/img/chesspieces/wikipedia/{piece}.png',
+    pieceTheme: 'https://lichess1.org/assets/piece/cburnett/{piece}.svg',
   });
+
+  // Highlight last-move squares exactly as Lichess does
+  const lastMove = {{ last_move | tojson }};
+  if (lastMove && lastMove.length >= 4) {
+    const squares = [lastMove.slice(0, 2), lastMove.slice(2, 4)];
+    squares.forEach(sq => {
+      const file = sq.charCodeAt(0) - 97;
+      const rank = parseInt(sq[1]) - 1;
+      const isLight = (file + rank) % 2 !== 0;
+      $(`#board .square-${sq}`).css('background-color', isLight ? '#cdd26a' : '#aaa23a');
+    });
+  }
 
   // Convert UCI moves (e.g. "f5d3") to SAN using chess.js
   function uciToSan(uciMoves, startFen) {
