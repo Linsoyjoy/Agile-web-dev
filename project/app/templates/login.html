@@ -10,15 +10,15 @@
 </head>
 
 <body>
-    <div class = "alt-display">
-        <!--Login Box-->
+    <div class="alt-display">
+
+        <!-- Login box — accepts username or email combined with password -->
         <div class="container" style="align-content: center;">
             <div class="sign-up-box">
                 <h1 class="heading"><b>Welcome Back!</b></h1>
                 <p>Enter your details to access your Chessmate account!</p>
-                
-                
-                <!-- Flash messages -->
+
+                <!-- Flash messages — show login errors or success notices -->
                 {% with messages = get_flashed_messages(with_categories=true) %}
                     {% if messages %}
                         {% for category, message in messages %}
@@ -31,21 +31,20 @@
 
                 <form method="POST" action="/login">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-
                     <input type="text" class="form-control form-control-lg" id="username" name="username" placeholder="Username/Email address" style="margin-bottom: 10px;">
-                    
                     <input type="password" class="form-control form-control-lg" id="password" name="password" placeholder="Password" style="margin-top: 10px;">
-
+                    <!-- Link to three-step password reset flow -->
                     <p><a class="forgot-pass" href="/forgotpassword">Forgot password</a></p><br>
-
                     <button type="submit" class="btn btn-secondary btn-lg btn-block">Log in</button>
                 </form>
             </div>
             <p class="sign-up">Don't have an account? <a href="/signup"><b>Sign Up</b></a></p>
         </div>
-        <!--Side image-->
+
+        <!-- Side image — decorative splash panel -->
         <div class="login-img">
             <img src="{{ url_for('static', filename='images/Login.jpg') }}" alt="Login page splash image">
         </div>
+
     </div>
 </body>
