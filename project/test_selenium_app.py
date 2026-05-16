@@ -106,10 +106,10 @@ class SeleniumTestCase(unittest.TestCase):
         submit_button.click()
 
         WebDriverWait(self.browser, 10).until(
-            EC.title_contains("Home")
+            EC.title_contains("Dashboard")
         )
 
-        self.assertIn("Home", self.browser.title)
+        self.assertIn("Dashboard", self.browser.title)
 
         # Confirm access to all dropdown menu pages
         access_page("Profile")
@@ -125,13 +125,14 @@ class SeleniumTestCase(unittest.TestCase):
 
         access_page("Calendar")
         access_page("Leaderboard")
+        access_page("Head-to-Head")
 
         # Access FAQ in footer
         faq_page = self.browser.find_element(By.LINK_TEXT, "FAQs")
         self.browser.execute_script("arguments[0].scrollIntoView({block: 'center'});", faq_page)
         time.sleep(1)
         faq_page.click()
-        
+
         # Access Query page in footer
         query_page = self.browser.find_element(By.LINK_TEXT, "Report issue")
         self.browser.execute_script("arguments[0].scrollIntoView({block: 'center'});", query_page)
@@ -139,7 +140,8 @@ class SeleniumTestCase(unittest.TestCase):
         query_page.click()
 
         # Return to home page
-        access_page("Home")
+        self.browser.get(localHost)
+        WebDriverWait(self.browser, 10).until(EC.title_contains("Dashboard"))
 
         new_record_button = self.browser.find_element(By.LINK_TEXT, "Add new record")
         new_record_button.click()
@@ -186,6 +188,135 @@ class SeleniumTestCase(unittest.TestCase):
         self.assertEqual(losses_element.text, "0")
         self.assertEqual(draws_element.text, "0")
 
+
+    # ── helpers ──────────────────────────────────────────────────────────────
+
+    def _signup(self, username, email, password):
+        self.browser.get(localHost + 'signup')
+        WebDriverWait(self.browser, 10).until(EC.title_contains("Sign Up"))
+        self.browser.find_element(By.NAME, "username").send_keys(username)
+        self.browser.find_element(By.NAME, "email").send_keys(email)
+        self.browser.find_element(By.NAME, "password").send_keys(password)
+        self.browser.find_element(By.NAME, "confirm_password").send_keys(password)
+        self.browser.find_element(By.XPATH, '//button[text()="Sign Up"]').click()
+        WebDriverWait(self.browser, 10).until(EC.title_contains("Login"))
+
+    def _login(self, username, password):
+        self.browser.get(localHost + 'login')
+        WebDriverWait(self.browser, 10).until(EC.title_contains("Login"))
+        self.browser.find_element(By.NAME, "username").send_keys(username)
+        self.browser.find_element(By.NAME, "password").send_keys(password)
+        self.browser.find_element(By.XPATH, '//button[text()="Log in"]').click()
+        WebDriverWait(self.browser, 10).until(EC.title_contains("Dashboard"))
+
+    # ── tests ─────────────────────────────────────────────────────────────────
+
+    def test_wrong_password_shows_error(self):
+        self._signup("testuser", "testuser@example.com", "password123")
+        self.browser.get(localHost + 'login')
+        WebDriverWait(self.browser, 10).until(EC.title_contains("Login"))
+        self.browser.find_element(By.NAME, "username").send_keys("testuser")
+        self.browser.find_element(By.NAME, "password").send_keys("wrongpassword")
+        self.browser.find_element(By.XPATH, '//button[text()="Log in"]').click()
+        WebDriverWait(self.browser, 10).until(
+            EC.presence_of_element_located((By.CLASS_NAME, "alert"))
+        )
+        self.assertIn("Login", self.browser.title)
+
+    def test_logout_clears_session(self):
+        self._signup("logoutuser", "logoutuser@example.com", "password123")
+        self._login("logoutuser", "password123")
+        self.browser.get(localHost + 'logout')
+        WebDriverWait(self.browser, 10).until(EC.title_contains("Login"))
+        self.browser.get(localHost + 'profile')
+        WebDriverWait(self.browser, 10).until(EC.title_contains("Login"))
+        self.assertIn("Login", self.browser.title)
+
+    def test_leaderboard_shows_user(self):
+        self._signup("lbuser", "lbuser@example.com", "password123")
+        self._login("lbuser", "password123")
+        self.browser.get(localHost + 'leaderboard')
+        WebDriverWait(self.browser, 10).until(EC.title_contains("Leaderboard"))
+        self.assertIn("lbuser", self.browser.page_source)
+
+    def test_h2h_with_real_match_data(self):
+        # Sign up two users and add a match record from each side
+        self._signup("player1", "player1@example.com", "password123")
+        self._signup("player2", "player2@example.com", "password123")
+
+        # Player1 records a win against player2
+        self._login("player1", "password123")
+        self.browser.get(localHost + 'newrecord')
+        WebDriverWait(self.browser, 10).until(EC.title_contains("Add New Game Record"))
+        match_type = self.browser.find_element(By.NAME, "match_type")
+        match_type.click()
+        WebDriverWait(self.browser, 10).until(
+            EC.element_to_be_clickable((By.XPATH, "//option[text()='Past Match (Already Played)']"))
+        ).click()
+        self.browser.find_element(By.NAME, "opponent").send_keys("player2")
+        self.browser.find_element(By.NAME, "result").send_keys("Win")
+        self.browser.find_element(By.NAME, "colour").send_keys("White")
+        self.browser.find_element(By.NAME, "opening").send_keys("Italian Game")
+        self.browser.find_element(By.NAME, "termination").click()
+        WebDriverWait(self.browser, 10).until(
+            EC.element_to_be_clickable((By.XPATH, "//option[text()='Resignation']"))
+        ).click()
+        self.browser.find_element(By.NAME, "date_played").send_keys("01-01-2025")
+        self.browser.find_element(By.NAME, "game_record").send_keys("1. e4 e5 2. Nf3 Nc6")
+        time.sleep(1)
+        submit_button = self.browser.find_element(By.XPATH, '//button[text()="Save Record"]')
+        self.browser.execute_script("arguments[0].scrollIntoView({block: 'center'});", submit_button)
+        time.sleep(1)
+        submit_button.click()
+
+        # Player2 records a loss against player1
+        self.browser.get(localHost + 'logout')
+        self._login("player2", "password123")
+        self.browser.get(localHost + 'newrecord')
+        WebDriverWait(self.browser, 10).until(EC.title_contains("Add New Game Record"))
+        match_type = self.browser.find_element(By.NAME, "match_type")
+        match_type.click()
+        WebDriverWait(self.browser, 10).until(
+            EC.element_to_be_clickable((By.XPATH, "//option[text()='Past Match (Already Played)']"))
+        ).click()
+        self.browser.find_element(By.NAME, "opponent").send_keys("player1")
+        self.browser.find_element(By.NAME, "result").send_keys("Loss")
+        self.browser.find_element(By.NAME, "colour").send_keys("Black")
+        self.browser.find_element(By.NAME, "opening").send_keys("Italian Game")
+        self.browser.find_element(By.NAME, "termination").click()
+        WebDriverWait(self.browser, 10).until(
+            EC.element_to_be_clickable((By.XPATH, "//option[text()='Resignation']"))
+        ).click()
+        self.browser.find_element(By.NAME, "date_played").send_keys("01-01-2025")
+        self.browser.find_element(By.NAME, "game_record").send_keys("1. e4 e5 2. Nf3 Nc6")
+        time.sleep(1)
+        submit_button = self.browser.find_element(By.XPATH, '//button[text()="Save Record"]')
+        self.browser.execute_script("arguments[0].scrollIntoView({block: 'center'});", submit_button)
+        time.sleep(1)
+        submit_button.click()
+
+        # Check H2H page for player1 vs player2 — player1 should show wins
+        self.browser.get(localHost + 'logout')
+        self._login("player1", "password123")
+        self.browser.get(localHost + 'h2h?opponent=player2')
+        WebDriverWait(self.browser, 10).until(EC.title_contains("Head"))
+        page = self.browser.page_source
+        self.assertIn("player2", page)
+
+    def test_h2h_no_games_message(self):
+        self._signup("userA", "userA@example.com", "password123")
+        self._signup("userB", "userB@example.com", "password123")
+        self._login("userA", "password123")
+        self.browser.get(localHost + 'h2h?opponent=userB')
+        WebDriverWait(self.browser, 10).until(EC.title_contains("Head"))
+        self.assertIn("userB", self.browser.page_source)
+
+    def test_puzzle_page_accessible(self):
+        self._signup("puzzleuser", "puzzleuser@example.com", "password123")
+        self._login("puzzleuser", "password123")
+        self.browser.get(localHost + 'puzzle')
+        WebDriverWait(self.browser, 10).until(EC.title_contains("Puzzle"))
+        self.assertIn("Daily Puzzle", self.browser.page_source)
 
     def test_incorrect_access_attempts(self):
         self.browser.get(localHost)
