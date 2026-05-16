@@ -1102,6 +1102,44 @@ def leaderboard():
     return render_template('leaderboard.html', players=players, username=username, user=privilege)
 
 
+# Daily puzzle — fetches today's puzzle from the lichess API and renders an interactive board
+@main.route('/puzzle')
+def daily_puzzle():
+    if 'username' not in session:
+        flash('Please log in to access this page.', 'warning')
+        return redirect(url_for('main.login'))
+
+    username = session['username']
+    privilege = User.query.get(username)
+
+    try:
+        req = urllib.request.Request(
+            'https://lichess.org/api/puzzle/daily',
+            headers={'User-Agent': 'ChessMate/1.0'}
+        )
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            data = json.loads(resp.read())
+        puzzle = data['puzzle']
+        game = data['game']
+    except Exception:
+        flash('Could not load the daily puzzle. Try again later.', 'danger')
+        return redirect(url_for('main.home'))
+
+    side_to_move = puzzle['fen'].split()[1]  # 'w' or 'b'
+    return render_template('puzzle.html',
+        user=privilege,
+        username=username,
+        fen=puzzle['fen'],
+        solution=puzzle['solution'],
+        themes=puzzle['themes'],
+        rating=puzzle['rating'],
+        puzzle_id=puzzle['id'],
+        last_move=puzzle.get('lastMove', ''),
+        side_to_move=side_to_move,
+        players=game.get('players', []),
+    )
+
+
 # Head-to-head — shows win/loss/draw breakdown and match history between two specific users
 @main.route('/h2h')
 def h2h():
