@@ -55,3 +55,4 @@ class Queries(db.Model):
     description = db.Column(db.String(1000), nullable=True)
     priority = db.Column(db.String(20), nullable=False, default='none')
     status = db.Column(db.String(20), nullable=False, default ='in progress') #in progress, completed, unresolved
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)

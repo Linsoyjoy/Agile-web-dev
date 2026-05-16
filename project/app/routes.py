@@ -1,6 +1,5 @@
 import os
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session
-from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 
@@ -8,7 +7,7 @@ from app import db, csrf
 from .blueprints import main
 from .models import User, Tournament, Match, Friendship, Queries
 from .forgot_password import reset_password_email
-from datetime import date, datetime
+from datetime import datetime
 
 @main.context_processor
 def inject_profile_pic():
@@ -46,6 +45,7 @@ def home():
         return render_template('landing.html')
     
     username = session['username']
+    privilege = User.query.get(username)
     
     # Get user's latest match (could be completed or upcoming)
     latest_match = Match.query.filter(
@@ -101,7 +101,7 @@ def home():
                          latest_match=latest_match,
                          upcoming_matches=upcoming_matches,
                          stats={'wins': wins, 'losses': losses, 'draws': draws, 'win_rate': win_rate},
-                         recent_matches=recent_matches)
+                         recent_matches=recent_matches, user=privilege)
 
 @main.route('/friends')
 def friends():
@@ -110,6 +110,7 @@ def friends():
         return redirect(url_for('main.login'))
     
     current_user = session['username']
+    privilege = User.query.get(current_user)
     
     # Get all users and calculate their rankings
     all_users = User.query.all()
@@ -216,7 +217,7 @@ def friends():
 
     return render_template('friends.html', username=current_user, players=players,
                          pending_requests=pending_requests, current_friends=current_friends,
-                         friends_leaderboard=friends_leaderboard)
+                         friends_leaderboard=friends_leaderboard, user=privilege)
 
 @csrf.exempt
 @main.route('/add_friend', methods=['POST'])
@@ -791,6 +792,7 @@ def calendar():
         return redirect(url_for('main.login'))
     try:
         username = session['username']
+        privilege = User.query.get(username)
         # Only show the current user's matches in the calendar
         all_matches = Match.query.filter(
             (Match.player == username) | (Match.opponent == username)
@@ -844,10 +846,10 @@ def calendar():
                 }
             })
 
-        return render_template('calendar.html', matches=match_entries, events=events, username=username)
+        return render_template('calendar.html', matches=match_entries, events=events, username=username, user=privilege)
     except Exception:
         # Handle case where tables don't exist or no data
-        return render_template('calendar.html', matches=[], events=[], username=session['username'])
+        return render_template('calendar.html', matches=[], events=[], username=session['username'], user=privilege)
 
 @main.route('/login', methods=['GET', 'POST'])
 def login():
@@ -888,9 +890,15 @@ def new_record():
     if 'username' not in session:
         flash('Please log in to access this page!', 'error')
         return redirect(url_for('main.login'))
+    
+    username = session['username']
+    privilege = User.query.get(username)
+
     if request.method == 'POST':
         try:
             # Get form data with proper error handling
+            username = session['username']
+            privilege = User.query.get(username)
             match_type = request.form.get('match_type', 'past')
             opponent = request.form.get('opponent', '').strip()
             result = request.form.get('result', '').strip()
@@ -909,8 +917,6 @@ def new_record():
             game_record = request.form.get('game_record', '').strip()
             termination = request.form.get('termination', '').strip()
             time_played = request.form.get('time_played', '').strip()
-            location = request.form.get('location', '').strip()
-            notes = request.form.get('notes', '').strip()
             opening = request.form.get('opening', '').strip()
             
             # For upcoming matches, set default values
@@ -956,7 +962,7 @@ def new_record():
             flash('Game recorded successfully!', 'success')
         return redirect(url_for('main.home'))
 
-    return render_template('new_record.html')
+    return render_template('new_record.html', user=privilege)
 
 @main.route('/match/<int:match_id>/edit', methods=['GET', 'POST'])
 def edit_match(match_id):
@@ -964,7 +970,10 @@ def edit_match(match_id):
         flash('Please log in to access this page!', 'error')
         return redirect(url_for('main.login'))
 
+    username = session['username']
+    privilege = User.query.get(username)
     match = Match.query.get_or_404(match_id)
+
     if match.player != session['username']:
         flash('You can only edit your own matches.', 'error')
         return redirect(url_for('main.viewstats'))
@@ -997,7 +1006,7 @@ def edit_match(match_id):
         flash('Match updated successfully!', 'success')
         return redirect(url_for('main.viewstats'))
 
-    return render_template('edit_match.html', match=match)
+    return render_template('edit_match.html', match=match, user=privilege)
 
 
 @main.route('/match/<int:match_id>/delete', methods=['POST'])
@@ -1022,23 +1031,31 @@ def query():
         flash('Please log in to access this page!', 'error')
         return redirect(url_for('main.login'))
     
+    username = session['username']
+    privilege = User.query.get(username)
+
     if request.method == 'POST':
         email = request.form.get('email', '')
         issue_type = request.form['issue_type']
         title = request.form['title']
         description = request.form['description']
+        timestamp = datetime.today()
         
         #Create a new query and store in database
-        new_query = Queries(email=email, issue_type=issue_type, title=title, description=description)
+        new_query = Queries(email=email, issue_type=issue_type, title=title, description=description, created_at=timestamp)
         db.session.add(new_query)
         db.session.commit()
         flash(f'Issue "{title}" has been submitted successfully! We will review it and get back to you soon.', 'success')
         return redirect(url_for('main.query'))
 
-    return render_template('query.html', username=session['username'])
+    return render_template('query.html', username=username, user=privilege)
 
 @main.route('/faq', methods=['GET', 'POST'])
 def faq():
+    if 'username' in session:
+        username = session['username']
+        privilege = User.query.get(username)
+        return render_template('faq.html', user=privilege)
     return render_template('faq.html')
 
 @main.route('/leaderboard')
@@ -1047,6 +1064,8 @@ def leaderboard():
         flash('Please log in to access this page!', 'error')
         return redirect(url_for('main.login'))
 
+    username = session['username']
+    privilege = User.query.get(username)
     all_users = User.query.all()
     players = []
     for u in all_users:
@@ -1077,7 +1096,7 @@ def leaderboard():
         })
 
     players.sort(key=lambda x: x['elo'], reverse=True)
-    return render_template('leaderboard.html', players=players, username=session['username'])
+    return render_template('leaderboard.html', players=players, username=username, user=privilege)
 
 @main.route('/h2h')
 def h2h():
@@ -1086,6 +1105,7 @@ def h2h():
         return redirect(url_for('main.login'))
 
     me = session['username']
+    privilege = User.query.get(me)
     opponent_name = request.args.get('opponent', '').strip()
     all_users = [u.username for u in User.query.filter(User.username != me).all()]
 
@@ -1147,7 +1167,7 @@ def h2h():
         }
 
     return render_template('h2h.html', username=me, opponent=opponent_name,
-                           all_users=all_users, stats=stats, matches=matches_display)
+                           all_users=all_users, stats=stats, matches=matches_display,user=privilege)
 
 @main.route('/logout')
 def logout():
@@ -1258,3 +1278,54 @@ def forgotpassword():
                 return redirect(url_for('main.forgotpassword'))
     else:
         return render_template('forgotpassword.html', resetstep = session['resetstep'])
+
+@main.route('/Dashboard')
+def admin_dashboard():
+    if 'username' not in session:
+        flash('Please log in to access this page!', 'error')
+        return redirect(url_for('main.login'))
+    
+    username = session['username']
+    privilege = User.query.get(username)
+    
+    #Get latest queries and number of queries received today
+    latest_query = Queries.query.all()
+    unresolved = Queries.query.filter_by(status ='unresolved').all()
+    in_progress = Queries.query.filter_by(status = 'in progress').all()
+    completed = Queries.query.filter_by(status = 'completed').all()
+
+    #Check if the current account is an admin account, otherwise deny access to page
+    if privilege.is_admin:
+        return render_template('home_admin.html', username=username, 
+                               query=latest_query, unresolved=unresolved,
+                               in_progress=in_progress, completed=completed,
+                               user=privilege)
+    else:
+        flash("sorry, you must be an admin to access this page!",'error')
+        return redirect(url_for('main.home'))
+
+@main.route('/Viewqueries')
+def view_queries():
+    if 'username' not in session:
+        flash('Please log in to access this page!', 'error')
+        return redirect(url_for('main.login'))
+    
+    username = session['username']
+    privilege = User.query.get(username)
+    
+    #Get latest queries and number of queries received today
+    queries = Queries.query.all()
+    bug_query = Queries.query.filter_by(issue_type = 'bug').all()
+    feature_query = Queries.query.filter_by(issue_type = 'feature').all()
+    question_query = Queries.query.filter_by(issue_type = 'question').all()
+    other_query = Queries.query.filter_by(issue_type = 'other').all()
+
+    #Check if the current account is an admin account, otherwise deny access to page
+    if privilege.is_admin:
+        return render_template('view_queries.html', username=username, 
+                               query=queries, bug=bug_query, 
+                               feature=feature_query,question=question_query,
+                               other=other_query, user=privilege)
+    else:
+        flash("sorry, you must be an admin to access this page!",'error')
+        return redirect(url_for('main.home'))
