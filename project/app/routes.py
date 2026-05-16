@@ -642,6 +642,8 @@ def save_platforms():
     if 'username' not in session:
         return redirect(url_for('main.login'))
     user = User.query.filter_by(username=session['username']).first()
+    if not user:
+        return redirect(url_for('main.login'))
     user.chesscom_username = request.form.get('chesscom_username', '').strip() or None
     user.lichess_username = request.form.get('lichess_username', '').strip() or None
     user.fide_id = request.form.get('fide_id', '').strip() or None
@@ -658,6 +660,8 @@ def fetch_ratings():
         return jsonify({'error': 'Not logged in'}), 401
 
     user = User.query.filter_by(username=session['username']).first()
+    if not user:
+        return jsonify({'error': 'Not logged in'}), 401
     ratings = {}
 
     if user.chesscom_username:
@@ -1250,7 +1254,7 @@ def signup():
             flash('Email already registered!', 'error')
             return render_template('signup.html')
 
-        password_hash = generate_password_hash(password)
+        password_hash = generate_password_hash(password, method='pbkdf2:sha256')
         new_user = User(username=username, email=email, password_hash=password_hash)
         db.session.add(new_user)
         db.session.commit()
@@ -1311,7 +1315,7 @@ def forgotpassword():
                     # Update user's password
                     user = User.query.filter_by(email=session.get('resetemail')).first()
                     if user:
-                        user.password_hash = generate_password_hash(password)
+                        user.password_hash = generate_password_hash(password, method='pbkdf2:sha256')
                         try:
                             db.session.commit()
                         except Exception as e:
