@@ -113,6 +113,9 @@ class SeleniumTestCase(unittest.TestCase):
 
         # Confirm access to all dropdown menu pages
         access_page("Profile")
+        access_page("Friends")
+        # Confirm access to stats and that correct wins, losses and draws are showing
+        access_page("Stats")
         wins_element = self.browser.find_element(By.XPATH, "//h5[text()='Wins']/following-sibling::h3")
         losses_element = self.browser.find_element(By.XPATH, "//h5[text()='Losses']/following-sibling::h3")
         draws_element = self.browser.find_element(By.XPATH, "//h5[text()='Draws']/following-sibling::h3")
@@ -120,12 +123,22 @@ class SeleniumTestCase(unittest.TestCase):
         self.assertEqual(losses_element.text, "0")
         self.assertEqual(draws_element.text, "0")
 
-        access_page("Friends")
-        access_page("Stats")
         access_page("Calendar")
         access_page("Leaderboard")
-        access_page("Submit Issue")
 
+        # Access FAQ in footer
+        faq_page = self.browser.find_element(By.LINK_TEXT, "FAQs")
+        self.browser.execute_script("arguments[0].scrollIntoView({block: 'center'});", faq_page)
+        time.sleep(1)
+        faq_page.click()
+        
+        # Access Query page in footer
+        query_page = self.browser.find_element(By.LINK_TEXT, "Report issue")
+        self.browser.execute_script("arguments[0].scrollIntoView({block: 'center'});", query_page)
+        time.sleep(1)
+        query_page.click()
+
+        # Return to home page
         access_page("Home")
 
         new_record_button = self.browser.find_element(By.LINK_TEXT, "Add new record")
@@ -134,6 +147,12 @@ class SeleniumTestCase(unittest.TestCase):
             EC.title_contains("Add New Game Record")
         )
         self.assertIn("Add New Game Record", self.browser.title)
+        match_type = self.browser.find_element(By.NAME, "match_type")
+        match_type.click()
+        match_type_option = WebDriverWait(self.browser, 10).until(
+            EC.element_to_be_clickable((By.XPATH, "//option[text()='Past Match (Already Played)']"))
+        )
+        match_type_option.click()
 
         opponent_field = self.browser.find_element(By.NAME, "opponent")
         result_field = self.browser.find_element(By.NAME, "result")
@@ -156,10 +175,10 @@ class SeleniumTestCase(unittest.TestCase):
         time.sleep(1)
         submit_button = self.browser.find_element(By.XPATH,'//button[text()="Save Record"]')
         self.browser.execute_script("arguments[0].scrollIntoView({block: 'center'});", submit_button)
-        submit_button.click()
         time.sleep(1)
+        submit_button.click()
 
-        access_page("Profile")
+        access_page("Stats")
         wins_element = self.browser.find_element(By.XPATH, "//h5[text()='Wins']/following-sibling::h3")
         losses_element = self.browser.find_element(By.XPATH, "//h5[text()='Losses']/following-sibling::h3")
         draws_element = self.browser.find_element(By.XPATH, "//h5[text()='Draws']/following-sibling::h3")
