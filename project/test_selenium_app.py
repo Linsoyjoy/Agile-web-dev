@@ -1,5 +1,6 @@
 import unittest
 import threading
+import tempfile
 from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -17,7 +18,29 @@ localHost = "http://localhost:5000/"
 
 class SeleniumTestCase(unittest.TestCase):
 
+    @classmethod
+    def setUpClass(cls):
+        cls.app = create_app('config.DevelopmentConfig')
+        with cls.app.app_context():
+            db.create_all()
+
+        cls.server_thread = threading.Thread(target=cls.app.run, kwargs={'debug': False, 'use_reloader': False})
+        cls.server_thread.daemon = True
+        cls.server_thread.start()
+        time.sleep(1)
+
+    @classmethod
+    def tearDownClass(cls):
+        with cls.app.app_context():
+            db.session.remove()
+            db.drop_all()
+
     def setUp(self):
+        with self.app.app_context():
+            db.session.remove()
+            db.drop_all()
+            db.create_all()
+
         options = Options()
 
         prefs = {
@@ -31,26 +54,14 @@ class SeleniumTestCase(unittest.TestCase):
         options.add_argument("--disable-notifications")
         options.add_argument("--disable-save-password-bubble")
         options.add_argument("--no-default-browser-check")
-        options.add_argument("--user-data-dir=/tmp/chrome-test-profile")
+        options.add_argument(f"--user-data-dir={tempfile.mkdtemp()}")
         options.add_argument("--no-first-run")
         options.add_argument("--disable-features=PasswordManager,PasswordCheck")
         options.add_argument("--disable-features=PasswordLeakDetection,PasswordManagerOnboarding,SafeBrowsingEnhancedProtection")
-        self.app = create_app('config.DevelopmentConfig')
-        with self.app.app_context():
-             db.create_all()
-
-        self.server_thread = threading.Thread(target=self.app.run, kwargs={'debug': False, 'use_reloader': False})
-        self.server_thread.daemon = True
-        self.server_thread.start()
-        time.sleep(1)
         self.browser = webdriver.Chrome(options=options)
 
     def tearDown(self):
-
         self.browser.quit()
-        with self.app.app_context():
-            db.session.remove()
-            db.drop_all()
 
     def test_full_website(self):
         # Method for accessing pages from dropdown menu
@@ -60,7 +71,9 @@ class SeleniumTestCase(unittest.TestCase):
             WebDriverWait(self.browser, 10).until(
                 EC.visibility_of_element_located((By.LINK_TEXT, "Profile"))
             )
-            link = self.browser.find_element(By.LINK_TEXT, page)
+            link = WebDriverWait(self.browser, 10).until(
+                EC.element_to_be_clickable((By.LINK_TEXT, page))
+            )
             link.click()
             WebDriverWait(self.browser, 10).until(
                 EC.title_contains(page)
@@ -106,10 +119,10 @@ class SeleniumTestCase(unittest.TestCase):
         submit_button.click()
 
         WebDriverWait(self.browser, 10).until(
-            EC.title_contains("Dashboard")
+            EC.title_contains("Home")
         )
 
-        self.assertIn("Dashboard", self.browser.title)
+        self.assertIn("Home", self.browser.title)
 
         # Confirm access to all dropdown menu pages
         access_page("Profile")
@@ -141,7 +154,7 @@ class SeleniumTestCase(unittest.TestCase):
 
         # Return to home page
         self.browser.get(localHost)
-        WebDriverWait(self.browser, 10).until(EC.title_contains("Dashboard"))
+        WebDriverWait(self.browser, 10).until(EC.title_contains("Home"))
 
         new_record_button = self.browser.find_element(By.LINK_TEXT, "Add new record")
         new_record_button.click()
@@ -207,7 +220,7 @@ class SeleniumTestCase(unittest.TestCase):
         self.browser.find_element(By.NAME, "username").send_keys(username)
         self.browser.find_element(By.NAME, "password").send_keys(password)
         self.browser.find_element(By.XPATH, '//button[text()="Log in"]').click()
-        WebDriverWait(self.browser, 10).until(EC.title_contains("Dashboard"))
+        WebDriverWait(self.browser, 10).until(EC.title_contains("Home"))
 
     # ── tests ─────────────────────────────────────────────────────────────────
 
@@ -227,7 +240,8 @@ class SeleniumTestCase(unittest.TestCase):
         self._signup("logoutuser", "logoutuser@example.com", "password123")
         self._login("logoutuser", "password123")
         self.browser.get(localHost + 'logout')
-        WebDriverWait(self.browser, 10).until(EC.title_contains("Login"))
+        WebDriverWait(self.browser, 10).until(EC.title_contains("Chessmate"))
+        # Confirm a protected page now redirects to login
         self.browser.get(localHost + 'profile')
         WebDriverWait(self.browser, 10).until(EC.title_contains("Login"))
         self.assertIn("Login", self.browser.title)
@@ -246,7 +260,7 @@ class SeleniumTestCase(unittest.TestCase):
 
         # Player1 records a win against player2
         self._login("player1", "password123")
-        self.browser.get(localHost + 'newrecord')
+        self.browser.get(localHost + 'new_record')
         WebDriverWait(self.browser, 10).until(EC.title_contains("Add New Game Record"))
         match_type = self.browser.find_element(By.NAME, "match_type")
         match_type.click()
@@ -272,7 +286,7 @@ class SeleniumTestCase(unittest.TestCase):
         # Player2 records a loss against player1
         self.browser.get(localHost + 'logout')
         self._login("player2", "password123")
-        self.browser.get(localHost + 'newrecord')
+        self.browser.get(localHost + 'new_record')
         WebDriverWait(self.browser, 10).until(EC.title_contains("Add New Game Record"))
         match_type = self.browser.find_element(By.NAME, "match_type")
         match_type.click()
