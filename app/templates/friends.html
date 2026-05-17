@@ -78,7 +78,6 @@
             <p>Ranking: #{{ friend.rank if friend.rank else 'N/A' }}</p>
             <p class="text-muted">ELO: {{ friend.elo }} | Win Rate: {{ friend.win_rate }}%</p>
             <a href="{{ url_for('main.view_user', username=friend.username) }}" class="btn btn-sm btn-primary">View Profile</a>
-            <button class="btn btn-sm btn-success mt-2">Share Win</button>
           </div>
         </div>
         {% endfor %}
@@ -147,7 +146,7 @@
           {% for request in pending_requests %}
           <div class="d-flex justify-content-between align-items-center p-3 border-bottom">
             <div>
-              <h6 class="mb-1">{{ request.requester_id }} wants to be your friend</h6>
+              <p class="mb-1"><strong>{{ request.requester_id }}</strong> wants to be your friend</p>
               <small class="text-muted">Sent {{ request.created_at.strftime('%b %d, %Y') if request.created_at else 'recently' }}</small>
             </div>
             <!-- Buttons post to /respond_friend_request via AJAX -->

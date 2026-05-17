@@ -1173,27 +1173,50 @@ def delete_match(match_id):
 # Query/support page — lets users submit an issue report which is saved to the database
 @main.route('/query', methods=['GET', 'POST'])
 def query():
-    if 'username' in session:
-        username = session['username']
-        privilege = User.query.get(username)
-        return render_template('query.html', username=username, user=privilege)
+    #For users that are not logged in
+    if 'username' not in session:
+        if request.method == 'POST':
+            try:
+                email = request.form.get('email', '')
+                issue_type = request.form['issue_type']
+                title = request.form['title']
+                description = request.form['description']
+                timestamp = datetime.today()
+
+                #Create a new query and store in database
+                new_query = Queries(email=email, issue_type=issue_type, title=title, description=description, created_at=timestamp)
+                db.session.add(new_query)
+                db.session.commit()
+                flash(f'Issue "{title}" has been submitted successfully! We will review it and get back to you soon.', 'success')
+                return redirect(url_for('main.query'))
+            except:
+                flash('something went wrong!','error')
+                return redirect(url_for('main.query'))
+        
+        return render_template('query.html')
+
+    username = session['username']
+    privilege = User.query.get(username)
 
     if request.method == 'POST':
-        email = request.form.get('email', '')
-        issue_type = request.form['issue_type']
-        title = request.form['title']
-        description = request.form['description']
-        timestamp = datetime.today()
-        status = 'new'
+        try:
+            email = request.form.get('email', '')
+            issue_type = request.form['issue_type']
+            title = request.form['title']
+            description = request.form['description']
+            timestamp = datetime.today()
 
-        #Create a new query and store in database
-        new_query = Queries(email=email, issue_type=issue_type, title=title, description=description, created_at=timestamp)
-        db.session.add(new_query)
-        db.session.commit()
-        flash(f'Issue "{title}" has been submitted successfully! We will review it and get back to you soon.', 'success')
-        return redirect(url_for('main.query'))
+            #Create a new query and store in database
+            new_query = Queries(email=email, issue_type=issue_type, title=title, description=description, created_at=timestamp)
+            db.session.add(new_query)
+            db.session.commit()
+            flash(f'Issue "{title}" has been submitted successfully! We will review it and get back to you soon.', 'success')
+            return redirect(url_for('main.query'))
+        except:
+            flash('something went wrong!','error')
+            return redirect(url_for('main.query'))
 
-    return render_template('query.html')
+    return render_template('query.html', username=username, user=privilege)
 
 
 # FAQ page — static page, passes user object for nav bar if logged in
@@ -1555,11 +1578,11 @@ def update_query(id):
         
         #Create a new query and store in database
         try:
-            if email_body != '':
+            if email_body and current_query.email:
                 send_reply(email_subject,current_query.email,email_body)
                 flash('Email sent!', 'success')
             db.session.commit()
-            flash('Changes to issue been made.', 'success')
+            flash('Changes to query has been made.', 'success')
             return redirect(url_for('main.view_queries'))
         except:
             flash('Error! changes to query were not saved', 'error')
