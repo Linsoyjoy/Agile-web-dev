@@ -89,8 +89,8 @@ def _player_stats(username):
             elif r == 'draw': draws += 1
     total = wins + losses + draws
     win_rate = round((wins / total * 100) if total > 0 else 0, 1)
-    # Simplified ELO: starts at 1200, scales with wins and win rate
-    elo = round(1200 + (wins * 10) + (win_rate * 2))
+    # Simplified ELO: starts at 1200, scales with wins and win rate, penalises losses (floor 100)
+    elo = max(100, round(1200 + (wins * 10) - (losses * 5) + (win_rate * 2)))
     return {'wins': wins, 'losses': losses, 'draws': draws, 'win_rate': win_rate, 'elo': elo}
 
 
@@ -837,7 +837,7 @@ def viewstats():
         c_win_rate = (c_wins / c_total * 100) if c_total > 0 else 0
         elo_history.append({
             'date': m.date_played.strftime('%Y-%m-%d'),
-            'elo': round(1200 + (c_wins * 10) + (c_win_rate * 2))
+            'elo': max(100, round(1200 + (c_wins * 10) - (c_losses * 5) + (c_win_rate * 2)))
         })
 
     my_matches = Match.query.filter(
