@@ -30,48 +30,34 @@
         </label>
       </form>
     </div>
-    <div>
+    <div class = 'text-start'>
       <h2>{{ user.username }}</h2>
       <p class="mb-2 text-light">{{ user.email }}</p>
       <button class="btn btn-success btn-custom" onclick="shareProfile()">Share Profile</button>
     </div>
   </div>
 
-  <div class="row mt-4">
-    <!-- Recent matches — last 3 completed matches with result badge, colour, and link to stats -->
-    <div class="col-md-6">
-      <div class="card p-3">
-        <h5>Recent Matches</h5>
-        <ul class="list-group">
-          {% for match in stats.recent_matches %}
-          <li class="list-group-item d-flex justify-content-between align-items-center">
-            <div>
-              <span class="badge bg-{{ 'success' if match.result == 'Win' else 'danger' if match.result == 'Loss' else 'secondary' }} me-2">{{ match.result }}</span>
-              vs {{ match.opponent }}
-              <br><small class="text-muted">{{ match.colour }}</small>
-            </div>
-            <a href="{{ url_for('main.viewstats') }}" class="btn btn-sm btn-outline-secondary">View</a>
-          </li>
-          {% endfor %}
-        </ul>
-        <a href="{{ url_for('main.viewstats') }}" class="btn btn-sm btn-outline-primary mt-2">View all matches</a>
-      </div>
-    </div>
-    <!-- Performance by colour — win rates calculated from the user's perspective -->
-    <div class="col-md-6">
-      <div class="card p-3">
-        <h5>Performance by Colour</h5>
-        <ul class="list-group">
-          <li class="list-group-item">White: {{ stats.white_win_rate }}% Win Rate</li>
-          <li class="list-group-item">Black: {{ stats.black_win_rate }}% Win Rate</li>
-        </ul>
-      </div>
-    </div>
+  <!-- Recent matches — last 3 completed matches with result badge, colour, and link to stats -->
+  <div class="card p-3 mt-4">
+    <h5>Recent Matches</h5>
+    <ul class="list-group">
+      {% for match in stats.recent_matches %}
+      <li class="list-group-item d-flex justify-content-between align-items-center">
+        <div>
+          <span class="badge bg-{{ 'success' if match.result == 'Win' else 'danger' if match.result == 'Loss' else 'secondary' }} me-2">{{ match.result }}</span>
+          vs {{ match.opponent }}
+          <br><small class="text-muted">{{ match.colour }}</small>
+        </div>
+        <a href="{{ url_for('main.viewstats') }}" class="btn btn-sm btn-outline-secondary">View</a>
+      </li>
+      {% endfor %}
+    </ul>
+    <a href="{{ url_for('main.viewstats') }}" class="btn btn-sm btn-outline-primary mt-2">View all matches</a>
   </div>
 
   <!-- Identified weaknesses — free-text field the user fills in manually, not auto-generated -->
   <div class="card mt-4 p-3">
-    <h5>Personal Note</h5>
+    <h5>Personal Notes</h5>
     <form method="POST" action="{{ url_for('main.save_weaknesses') }}">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <textarea class="form-control mb-2" name="weaknesses" rows="3" placeholder="Enter your notes here (eg: identified weaknesses, study materials, etc.)">{{ stats.weaknesses }}</textarea>
