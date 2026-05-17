@@ -7,7 +7,6 @@ from app.models import User, Match, Queries
 app = create_app()
 
 #populate the data
-"""Add sample users and data for testing"""
 with app.app_context():
     db.create_all()
     # Check if data already exists
@@ -42,9 +41,10 @@ with app.app_context():
             pass
     
     queries = [
-        Queries(email='alice@example.com', title='Issue with login', description='I am unable to log in to my account.', issue_type='bug', priority='high'),
-        Queries(email='bobsfriend@example.com', title='Issue with registration', description='My friend is unable to register for a new account.', issue_type='bug', priority='medium'),
-        Queries(email='charlie@example.com', title='Feature request', description='I would like to see a dark mode option.', issue_type='enhancement', priority='low')
+        Queries(email='alice@example.com', title='Issue with login', description='I am unable to log in to my account.', issue_type='bug'),
+        Queries(email='bobsfriend@example.com', title='Issue with registration', description='My friend is unable to register for a new account.', issue_type='bug'),
+        Queries(email='charlie@example.com', title='Viewing other users profile', description='How do I see other users profile?', issue_type='question'),
+        Queries(email='', title='Feature request', description='I would like to see a dark mode option.', issue_type='feature')
     ]
     for query in queries:
         if not Queries.query.filter_by(email=query.email, title=query.title).first():
