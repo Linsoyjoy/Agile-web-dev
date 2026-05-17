@@ -57,11 +57,6 @@ def upgrade():
                existing_type=sa.TEXT(length=256),
                type_=sa.String(length=256),
                existing_nullable=False)
-        batch_op.drop_column('chesscom_rating')
-        batch_op.drop_column('ratings_last_updated')
-        batch_op.drop_column('lichess_username')
-        batch_op.drop_column('chesscom_username')
-        batch_op.drop_column('lichess_rating')
 
     # ### end Alembic commands ###
 

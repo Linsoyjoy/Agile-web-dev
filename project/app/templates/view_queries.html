@@ -190,8 +190,8 @@
                 {%if q.status == 'completed'%}
                   <tr class="table-active">
                     <td>{{ q.created_at.strftime("%d-%m-%Y %H:%m") }}</td>
-                    <td>{{ q.title}}</td>
                     <td>{{ q.issue_type }}</td>
+                    <td>{{ q.title }}</td>
                     <td>
                       <a href="{{ url_for('main.current_query',id=q.id) }}" class="btn btn-sm btn-primary mr-1">View</a> 
                       <form method="POST" action="{{ url_for('main.delete_query',id=q.id) }}" class="d-inline"
