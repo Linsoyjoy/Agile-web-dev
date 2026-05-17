@@ -1184,12 +1184,8 @@ def query():
         title = request.form['title']
         description = request.form['description']
         timestamp = datetime.today()
-<<<<<<< HEAD
-        
-=======
         status = 'new'
 
->>>>>>> 101a1209452cbf0888954b134f3f2c8317f504e1
         #Create a new query and store in database
         new_query = Queries(email=email, issue_type=issue_type, title=title, description=description, created_at=timestamp)
         db.session.add(new_query)
@@ -1475,11 +1471,7 @@ def admin_dashboard():
 
     username = session['username']
     privilege = User.query.get(username)
-<<<<<<< HEAD
-    
-=======
 
->>>>>>> 101a1209452cbf0888954b134f3f2c8317f504e1
     #Get 10 of the latest queries
     latest_query = Queries.query.order_by(Queries.created_at.desc()).limit(10)
 
