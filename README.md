@@ -1,16 +1,24 @@
-# CHESSMATE
+![Chessmate logo](/app/static/images/Chessmate.png)
 
-Chess tournament tracking website. 
+# About
+Chessmate is a chess match and tournament tracking website. Its the perfect place to keep the records of all your chess matches and analyse them in one place.
 
-### Features
+# Features
 
-* Add records of their tournaments
-* View player's statistics
-* Connect with other users and view their statistics
-* Use the calendar to view upcoming tournaments
-* Submit queries for any issues within the website
+### Users
+* Add records of matches and tournaments
+* View player's statistics.
+* Connect with other users and compare statistics.
+* View the leaderboard to compare rankings with other users in the website
+* Use the calendar to view upcoming tournaments.
+* Submit queries in regards to the website.
+* Play a chess minigame to improve skills and knowledge
+### Admins
+* View queries sent by users
+* Change status of queries
+* Reply to users regarding their queries through email
 
-## How to Run
+# How to Run
 
 1. Clone the repository:
    ```
@@ -50,7 +58,12 @@ Chess tournament tracking website.
 
 8. Sign up for an account to get started. The database is created automatically on first run.
 
-## Group Members
+9. (optional) run `populate_database.py` to populate the site
+    ```
+   python3 populate_database.py
+    ``` 
+
+# Group Members
 
 |Name|Student ID|GitHub Username|
 |-|-|-|
@@ -59,7 +72,7 @@ Chess tournament tracking website.
 |Lindsay Wijaya|24554944|Linsoyjoy|
 |Sam Hunt|23951196|Jintexdemer|
 
-### 
+Chessmate was made for the 2026 CITS3401 group project
 
 
 
