@@ -30,10 +30,7 @@ Chess tournament tracking website.
    pip install -r project/requirements.txt
    ```
 
-4. Create a `.env` file inside the `project/` folder:
-   ```
-   cd project
-   ```
+4. Create a `.env` file:
    Create a file named `.env` with the following content:
    ```
    SECRET_KEY=any-random-string-here
